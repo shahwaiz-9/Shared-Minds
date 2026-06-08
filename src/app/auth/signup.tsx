@@ -1,14 +1,19 @@
 import CustomButton from '@/components/button';
 import CustomTextField from '@/components/textfield';
 import { register as firebaseRegister, registerWithGithub, registerWithGoogle } from '@/firebase/auth';
+import { SOCIAL_CONFIG } from '@/firebase/socialConfig';
 import { auth } from '@/firebase/config';
 import { Colors } from '@/utlis/color';
 import { AntDesign } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { updateProfile } from 'firebase/auth';
-import React, { useState } from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function signup() {
     const router = useRouter();
@@ -19,6 +24,54 @@ export default function signup() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // Google Auth Request (Native Mobile)
+    const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
+        {
+            clientId: Platform.select({
+                web: SOCIAL_CONFIG.google.webClientId,
+                ios: SOCIAL_CONFIG.google.iosClientId,
+                android: SOCIAL_CONFIG.google.androidClientId,
+            }),
+            scopes: ['openid', 'profile', 'email'],
+            redirectUri: AuthSession.makeRedirectUri({
+                scheme: 'sharedminds',
+            }),
+        },
+        {
+            authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+            tokenEndpoint: 'https://oauth2.googleapis.com/token',
+        }
+    );
+
+    // GitHub Auth Request (Native Mobile)
+    const [githubRequest, githubResponse, githubPromptAsync] = AuthSession.useAuthRequest(
+        {
+            clientId: SOCIAL_CONFIG.github.clientId,
+            scopes: ['identity', 'user:email'],
+            redirectUri: AuthSession.makeRedirectUri({
+                scheme: 'sharedminds',
+            }),
+        },
+        {
+            authorizationEndpoint: 'https://github.com/login/oauth/authorize',
+            tokenEndpoint: 'https://github.com/login/oauth/access_token',
+        }
+    );
+
+    // Handle Google Response (Native Mobile)
+    useEffect(() => {
+        if (googleResponse?.type === 'success' && googleResponse.authentication?.idToken) {
+            handleNativeGoogleSignUp(googleResponse.authentication.idToken);
+        }
+    }, [googleResponse]);
+
+    // Handle GitHub Response (Native Mobile)
+    useEffect(() => {
+        if (githubResponse?.type === 'success' && githubResponse.params.code) {
+            handleNativeGithubSignUp(githubResponse.params.code);
+        }
+    }, [githubResponse]);
 
     const handleSignUp = async () => {
         if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -46,7 +99,7 @@ export default function signup() {
                     displayName: name.trim(),
                 });
             }
-            // router.replace('/');
+            router.replace('/application');
         } catch (error: any) {
             console.error('Signup error:', error);
             if (error.code === 'auth/email-already-in-use') {
@@ -63,43 +116,121 @@ export default function signup() {
         }
     };
 
-    const handleGoogleSignUp = async () => {
+    const formatAuthError = (error: any) => {
+        if (error?.code === 'auth/operation-not-supported-in-this-environment') {
+            return 'Social login popups are only supported on the Web platform. Mobile apps require native OAuth configurations.';
+        }
+        return error?.message || 'An error occurred during authentication.';
+    };
 
+    const handleNativeGoogleSignUp = async (idToken: string) => {
         setLoading(true);
         setErrorMessage(null);
-
         try {
+            await registerWithGoogle(idToken);
+            router.replace('/application');
+        } catch (e: any) {
+            console.error('Google Native Signup Error:', e);
+            setErrorMessage(e?.message || 'Google Native Signup failed.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            const user = await registerWithGoogle();
-
-            if (user) {
-                // router.replace('/');
+    const handleNativeGithubSignUp = async (code: string) => {
+        setLoading(true);
+        setErrorMessage(null);
+        try {
+            if (!SOCIAL_CONFIG.github.clientSecret) {
+                throw new Error('GitHub Client Secret is not configured in socialConfig.ts');
             }
 
-        } catch (e) {
-            console.error('Google Sign Up Error:', e);
+            const response = await fetch('https://github.com/login/oauth/access_token', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    client_id: SOCIAL_CONFIG.github.clientId,
+                    client_secret: SOCIAL_CONFIG.github.clientSecret,
+                    code,
+                    redirect_uri: AuthSession.makeRedirectUri({
+                        scheme: 'sharedminds',
+                    }),
+                }),
+            });
 
+            const data = await response.json();
+            if (data.access_token) {
+                await registerWithGithub(data.access_token);
+                router.replace('/application');
+            } else {
+                throw new Error(data.error_description || 'Failed to exchange GitHub access token.');
+            }
+        } catch (e: any) {
+            console.error('GitHub Native Signup Error:', e);
+            setErrorMessage(e?.message || 'GitHub Native Signup failed.');
+        } finally {
+            setLoading(false);
         }
-    }
+    };
+
+    const handleGoogleSignUp = async () => {
+        if (Platform.OS === 'web') {
+            setLoading(true);
+            setErrorMessage(null);
+            try {
+                const user = await registerWithGoogle();
+                if (user) {
+                    router.replace('/application');
+                }
+            } catch (e: any) {
+                console.error('Google Sign Up Error:', e);
+                setErrorMessage(formatAuthError(e));
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            if (!SOCIAL_CONFIG.google.webClientId && !SOCIAL_CONFIG.google.iosClientId && !SOCIAL_CONFIG.google.androidClientId) {
+                setErrorMessage('Please configure Google Client IDs in src/firebase/socialConfig.ts to use Google login on mobile devices.');
+                return;
+            }
+            if (googleRequest) {
+                googlePromptAsync();
+            } else {
+                setErrorMessage('Google Sign In is initializing, please try again.');
+            }
+        }
+    };
 
     const handleGithubSignUp = async () => {
-
-        setLoading(true);
-        setErrorMessage(null);
-
-        try {
-
-            const user = await registerWithGithub();
-
-            if (user) {
-                // router.replace('/');
+        if (Platform.OS === 'web') {
+            setLoading(true);
+            setErrorMessage(null);
+            try {
+                const user = await registerWithGithub();
+                if (user) {
+                    router.replace('/application');
+                }
+            } catch (e: any) {
+                console.error('Github Sign Up Error:', e);
+                setErrorMessage(formatAuthError(e));
+            } finally {
+                setLoading(false);
             }
-
-        } catch (e) {
-            console.error('Github Sign Up Error:', e);
-
+        } else {
+            if (!SOCIAL_CONFIG.github.clientId) {
+                setErrorMessage('Please configure GitHub Client ID in src/firebase/socialConfig.ts to use GitHub login on mobile devices.');
+                return;
+            }
+            if (githubRequest) {
+                githubPromptAsync();
+            } else {
+                setErrorMessage('GitHub Sign In is initializing, please try again.');
+            }
         }
-    }
+    };
 
     return (
         <KeyboardAwareScrollView
@@ -288,8 +419,8 @@ export default function signup() {
                         shadowOpacity: 0.05,
                         shadowRadius: 4,
                     }}
-
                     onPress={handleGoogleSignUp}
+                    disabled={loading}
                 >
                     <AntDesign
                         name="google"
@@ -313,8 +444,8 @@ export default function signup() {
                         shadowOpacity: 0.05,
                         shadowRadius: 4,
                     }}
-
                     onPress={handleGithubSignUp}
+                    disabled={loading}
                 >
                     <AntDesign
                         name="github"

@@ -3,8 +3,11 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
+// Prevent the splash screen from auto-hiding immediately
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, error] = useFonts({
     "Outfit-Black": require("../../assets/fonts/Outfit-Black.ttf"),
     "Outfit-Bold": require("../../assets/fonts/Outfit-Bold.ttf"),
     "Outfit-ExtraBold": require("../../assets/fonts/Outfit-ExtraBold.ttf"),
@@ -17,15 +20,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    async function prepare() {
-      await SplashScreen.preventAutoHideAsync();
-    }
-    void prepare();
-  }, []);
+    if (error) throw error;
+  }, [error]);
 
   useEffect(() => {
     if (fontsLoaded) {
-      void SplashScreen.hideAsync();
+      SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
@@ -33,5 +33,24 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name="login"
+        options={{ animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen
+        name="signup"
+        options={{ presentation: 'modal', animation: 'fade' }}
+      />
+      <Stack.Screen
+        name="application"
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="forgotpassword"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+    </Stack>
+  );
 }

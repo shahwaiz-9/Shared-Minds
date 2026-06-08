@@ -5,9 +5,10 @@ import {
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signInWithPopup,
+    signInWithCredential,
     signOut,
 } from 'firebase/auth';
-
+import { Platform } from 'react-native';
 import { auth } from '../firebase/config';
 
 export const register = (
@@ -32,80 +33,63 @@ export const login = (
     );
 };
 
-export const LoginWithGithub = async () => {
-
-    const provider = new GithubAuthProvider();
-
-
-    try {
-
-        const result = await signInWithPopup(auth, provider);
-
-        const credential = GithubAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken;
-        const user = result.user;
-        console.log('Github login successful:', user);
-
-        // User interface call in future
-        return true;
-
-    } catch (e) {
-        console.error('Github login error:', e);
-    }
-}
-
-export const LoginWithGoogle = async () => {
-
-    const provider = new GoogleAuthProvider();
-
-    try {
-
-        const result = await signInWithPopup(auth, provider);
-
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken;
-        const user = result.user;
-
-        console.log('Google login successful:', user);
-
-        // User interface call in future
-        return true;
-    } catch (e) {
-
-        console.error('Google login error:', e);
-
-    }
-
-}
-
-export const registerWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        console.log("Google registration/login successful:", user);
-        return result;
-    } catch (error) {
-        console.error("Google Auth Error:", error);
-        throw error;
+export const LoginWithGithub = async (token?: string) => {
+    if (Platform.OS === 'web') {
+        const provider = new GithubAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            return result.user;
+        } catch (e) {
+            console.error('Github Web login error:', e);
+            throw e;
+        }
+    } else {
+        if (!token) {
+            throw new Error('Access token is required for native GitHub sign in.');
+        }
+        try {
+            const credential = GithubAuthProvider.credential(token);
+            const result = await signInWithCredential(auth, credential);
+            return result.user;
+        } catch (e) {
+            console.error('Github native login error:', e);
+            throw e;
+        }
     }
 };
 
-export const registerWithGithub = async () => {
-    const provider = new GithubAuthProvider();
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        console.log("Github registration/login successful:", user);
-        return result;
-    } catch (error) {
-        console.error("Github Auth Error:", error);
-        throw error;
+export const LoginWithGoogle = async (idToken?: string) => {
+    if (Platform.OS === 'web') {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            return result.user;
+        } catch (e) {
+            console.error('Google Web login error:', e);
+            throw e;
+        }
+    } else {
+        if (!idToken) {
+            throw new Error('ID Token is required for native Google sign in.');
+        }
+        try {
+            const credential = GoogleAuthProvider.credential(idToken);
+            const result = await signInWithCredential(auth, credential);
+            return result.user;
+        } catch (e) {
+            console.error('Google native login error:', e);
+            throw e;
+        }
     }
+};
 
-}
+export const registerWithGoogle = async (idToken?: string) => {
+    return LoginWithGoogle(idToken);
+};
+
+export const registerWithGithub = async (token?: string) => {
+    return LoginWithGithub(token);
+};
 
 export const forgotPassword = (
     email: string,
