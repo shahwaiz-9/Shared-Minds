@@ -1,4 +1,4 @@
-import { logout } from '@/firebase/auth';
+import { logout } from '@/firebase/auth/auth';
 import Feather from '@expo/vector-icons/Feather';
 import { useRouter } from 'expo-router';
 import { Text, TouchableOpacity, View } from "react-native";

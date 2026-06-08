@@ -1,6 +1,6 @@
 import CustomButton from '@/components/button';
 import CustomTextField from '@/components/textfield';
-import { forgotPassword as firebaseForgotPassword } from '@/firebase/auth';
+import { forgotPassword as firebaseForgotPassword } from '@/firebase/auth/auth';
 import { Colors } from '@/utlis/color';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';

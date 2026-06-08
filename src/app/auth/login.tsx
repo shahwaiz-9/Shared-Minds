@@ -1,6 +1,8 @@
 import CustomButton from '@/components/button';
-import { login as firebaseLogin, LoginWithGithub, LoginWithGoogle } from '@/firebase/auth';
-import { SOCIAL_CONFIG } from '@/firebase/socialConfig';
+import { login as firebaseLogin, LoginWithGithub, LoginWithGoogle } from '@/firebase/auth/auth';
+import { SOCIAL_CONFIG } from '@/firebase/auth/socialConfig';
+import { getUserDocument } from '@/firebase/collection/user_collection';
+import { useAuthStore } from '@/store';
 import { Colors } from '@/utlis/color';
 import { AntDesign } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
@@ -11,7 +13,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import CustomTextField from '../../components/textfield';
-
+import { User } from '@/interface/user';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function login() {
@@ -21,6 +23,8 @@ export default function login() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const setUser = useAuthStore((state) => state.setUser);
 
     // Google Auth Request — uses expo's Google provider for correct discovery + redirect handling
     const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
@@ -68,8 +72,19 @@ export default function login() {
         setErrorMessage(null);
 
         try {
-            await firebaseLogin(email.trim(), password);
-            router.replace('/auth/profilesetup');
+            const result = await firebaseLogin(email.trim(), password);
+            const userDoc = await getUserDocument(result.user.uid);
+            // const user = result.user
+            // setUser(user)
+            if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
+                router.replace('/application/home' as any);
+            } else {
+                // const user: User {
+
+
+                // }
+                router.replace('/auth/profilesetup' as any);
+            }
         } catch (error: any) {
             console.error('Login error:', error);
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -96,8 +111,13 @@ export default function login() {
         setErrorMessage(null);
 
         try {
-            await LoginWithGoogle(idToken);
-            router.replace('/application/home');
+            const firebaseUser = await LoginWithGoogle(idToken);
+            const userDoc = await getUserDocument(firebaseUser.uid);
+            if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
+                router.replace('/application/home' as any);
+            } else {
+                router.replace('/auth/profilesetup' as any);
+            }
         } catch (e: any) {
             console.error('Google Native Login Error:', e);
             setErrorMessage(e?.message || 'Google Native Login failed.');
@@ -132,8 +152,13 @@ export default function login() {
 
             const data = await response.json();
             if (data.access_token) {
-                await LoginWithGithub(data.access_token);
-                // router.replace('/application/home');
+                const firebaseUser = await LoginWithGithub(data.access_token);
+                const userDoc = await getUserDocument(firebaseUser.uid);
+                if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
+                    router.replace('/application/home' as any);
+                } else {
+                    router.replace('/auth/profilesetup' as any);
+                }
             } else {
                 throw new Error(data.error_description || 'Failed to exchange GitHub access token.');
             }

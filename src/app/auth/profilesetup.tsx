@@ -1,5 +1,6 @@
 import CustomButton from '@/components/button';
-import { auth } from '@/firebase/config';
+import { auth } from '@/firebase/auth/config';
+import { createUserDocument } from '@/firebase/collection/user_collection';
 import { User } from '@/interface/user';
 import { useAuthStore } from '@/store';
 import { uploadToCloudinary } from '@/utlis/cloudinary';
@@ -10,6 +11,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
     Platform,
@@ -36,8 +38,10 @@ export default function ProfileSetupScreen() {
     const [pickingCover, setPickingCover] = useState(false);
     const [pickingAvatar, setPickingAvatar] = useState(false);
     const [bioFocused, setBioFocused] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     const pickImage = async (type: 'cover' | 'avatar') => {
+        if (saving) return;
         const setter = type === 'cover' ? setPickingCover : setPickingAvatar;
         setter(true);
 
@@ -69,55 +73,98 @@ export default function ProfileSetupScreen() {
         }
     };
 
-    const handleImageUpload = async (pickerResult: any) => {
-        try {
-            const imageUrl = await uploadToCloudinary(pickerResult.uri);
-            console.log('Image uploaded successfully:', imageUrl);
-
-            return imageUrl;
-        } catch (error) {
-            console.error('Upload failed:', error);
-        }
-    };
-
     const setUser = useAuthStore((state) => state.setUser);
 
     const handleContinue = async () => {
         const currentUser = auth.currentUser;
         if (!currentUser) {
-            console.error('No authenticated user available for profile setup.');
+            Alert.alert('Error', 'No authenticated user available for profile setup.');
             return;
         }
 
-        const coveruri = coverUri ? (await handleImageUpload({ uri: coverUri })) || null : null;
-        const profileuri = avatarUri ? (await handleImageUpload({ uri: avatarUri })) || null : null;
+        setSaving(true);
 
-        if (profileuri) {
-            try {
-                await currentUser.updateProfile({ photoURL: profileuri });
-            } catch (error) {
-                console.error('Failed to update auth profile photoURL:', error);
+        try {
+            let coverUrl: string | null = null;
+            if (coverUri) {
+                const uploaded = await uploadToCloudinary(coverUri);
+                if (!uploaded) {
+                    throw new Error('Failed to upload cover image.');
+                }
+                coverUrl = uploaded;
             }
+
+            let avatarUrl: string | null = null;
+            if (avatarUri) {
+                const uploaded = await uploadToCloudinary(avatarUri);
+                if (!uploaded) {
+                    throw new Error('Failed to upload avatar image.');
+                }
+                avatarUrl = uploaded;
+            }
+
+            if (avatarUrl) {
+                try {
+                    await currentUser.updateProfile({ photoURL: avatarUrl });
+                } catch (error) {
+                    console.error('Failed to update auth profile photoURL:', error);
+                }
+            }
+
+            const user: User = {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName,
+                photoURL: avatarUrl ?? currentUser.photoURL,
+                coverPhotoURL: coverUrl,
+                bio: bio.trim() || null,
+                createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
+                updatedAt: new Date(),
+            };
+
+            await createUserDocument(user);
+            setUser(user);
+            router.replace('/application/home' as any);
+        } catch (error: any) {
+            console.error('Profile setup error:', error);
+            Alert.alert('Profile Setup Failed', error.message || 'Failed to save profile. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSkip = async () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            router.replace('/auth/login' as any);
+            return;
         }
 
-        const user: User = {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoURL: profileuri ?? currentUser.photoURL,
-            coverPhotoURL: coveruri,
-            bio: bio.trim() || null,
-            createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
-            updatedAt: new Date(),
-        };
+        setSaving(true);
 
-        setUser(user);
-        router.replace('/application/' as any);
+        try {
+            const user: User = {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName,
+                photoURL: currentUser.photoURL,
+                coverPhotoURL: null,
+                bio: null,
+                createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
+                updatedAt: new Date(),
+            };
+
+            await createUserDocument(user);
+            setUser(user);
+            router.replace('/application/home' as any);
+        } catch (error: any) {
+            console.error('Skip profile setup error:', error);
+            Alert.alert('Error', 'Failed to skip. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleSkip = () => {
-        router.replace('/application/' as any);
-    };
 
     return (
         <View style={styles.container}>
@@ -166,6 +213,7 @@ export default function ProfileSetupScreen() {
                     <TouchableOpacity
                         style={styles.skipButtonTop}
                         onPress={handleSkip}
+                        disabled={saving}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                         <Text style={styles.skipButtonTopText}>Skip for now</Text>
@@ -236,6 +284,7 @@ export default function ProfileSetupScreen() {
                             onFocus={() => setBioFocused(true)}
                             onBlur={() => setBioFocused(false)}
                             textAlignVertical="top"
+                            editable={!saving}
                         />
                     </View>
                     <Text style={styles.charCounter}>
@@ -249,10 +298,12 @@ export default function ProfileSetupScreen() {
                         title="Continue"
                         onPress={handleContinue}
                         type="simple"
+                        loading={saving}
                     />
                     <TouchableOpacity
                         style={styles.skipButtonBottom}
                         onPress={handleSkip}
+                        disabled={saving}
                     >
                         <Text style={styles.skipButtonBottomText}>Skip for now</Text>
                     </TouchableOpacity>

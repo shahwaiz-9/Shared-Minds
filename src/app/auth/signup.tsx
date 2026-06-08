@@ -1,7 +1,7 @@
 import CustomButton from '@/components/button';
 import CustomTextField from '@/components/textfield';
-import { register as firebaseRegister } from '@/firebase/auth';
-import { auth } from '@/firebase/config';
+import { register as firebaseRegister } from '@/firebase/auth/auth';
+import { auth } from '@/firebase/auth/config';
 import { User } from '@/interface/user';
 import { useAuthStore } from '@/store';
 import { Colors } from '@/utlis/color';

@@ -19,7 +19,7 @@ interface AuthStore {
     initializeAuth: () => () => void; // Returns unsubscribe function
 }
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAppStore = create<AuthStore>((set, get) => ({
     user: null,
     loading: true, // Start as true to handle initial check
     error: null,
