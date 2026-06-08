@@ -4,10 +4,11 @@ import { SOCIAL_CONFIG } from '@/firebase/socialConfig';
 import { Colors } from '@/utlis/color';
 import { AntDesign } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import { Image, Text, TouchableOpacity, View, Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import React, { useEffect, useState } from 'react';
+import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import CustomTextField from '../../components/textfield';
 
@@ -21,24 +22,12 @@ export default function login() {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // Google Auth Request (Native Mobile)
-    const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
-        {
-            clientId: Platform.select({
-                web: SOCIAL_CONFIG.google.webClientId,
-                ios: SOCIAL_CONFIG.google.iosClientId,
-                android: SOCIAL_CONFIG.google.androidClientId,
-            }),
-            scopes: ['openid', 'profile', 'email'],
-            redirectUri: AuthSession.makeRedirectUri({
-                scheme: 'sharedminds',
-            }),
-        },
-        {
-            authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-            tokenEndpoint: 'https://oauth2.googleapis.com/token',
-        }
-    );
+    // Google Auth Request — uses expo's Google provider for correct discovery + redirect handling
+    const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+        webClientId: SOCIAL_CONFIG.google.webClientId,
+        iosClientId: SOCIAL_CONFIG.google.iosClientId || undefined,
+        androidClientId: SOCIAL_CONFIG.google.androidClientId || undefined,
+    });
 
     // GitHub Auth Request (Native Mobile)
     const [githubRequest, githubResponse, githubPromptAsync] = AuthSession.useAuthRequest(
@@ -80,7 +69,7 @@ export default function login() {
 
         try {
             await firebaseLogin(email.trim(), password);
-            router.replace('/application');
+            router.replace('/application/home');
         } catch (error: any) {
             console.error('Login error:', error);
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -105,9 +94,10 @@ export default function login() {
     const handleNativeGoogleLogin = async (idToken: string) => {
         setLoading(true);
         setErrorMessage(null);
+
         try {
             await LoginWithGoogle(idToken);
-            router.replace('/application');
+            router.replace('/application/home');
         } catch (e: any) {
             console.error('Google Native Login Error:', e);
             setErrorMessage(e?.message || 'Google Native Login failed.');
@@ -143,7 +133,7 @@ export default function login() {
             const data = await response.json();
             if (data.access_token) {
                 await LoginWithGithub(data.access_token);
-                router.replace('/application');
+                // router.replace('/application/home');
             } else {
                 throw new Error(data.error_description || 'Failed to exchange GitHub access token.');
             }
@@ -157,57 +147,36 @@ export default function login() {
 
     const handleGoogleLogin = async () => {
         if (Platform.OS === 'web') {
-            setLoading(true);
-            setErrorMessage(null);
-            try {
-                const success = await LoginWithGoogle();
-                if (success) {
-                    router.replace('/application');
-                }
-            } catch (e: any) {
-                console.error('Google Web Login Error:', e);
-                setErrorMessage(formatAuthError(e));
-            } finally {
-                setLoading(false);
-            }
+            setErrorMessage('Google login is currently supported only on native mobile builds.');
+            return;
+        }
+
+        if (!SOCIAL_CONFIG.google.webClientId && !SOCIAL_CONFIG.google.iosClientId && !SOCIAL_CONFIG.google.androidClientId) {
+            setErrorMessage('Please configure Google Client IDs in src/firebase/socialConfig.ts to use Google login on mobile devices.');
+            return;
+        }
+
+        if (googleRequest) {
+            googlePromptAsync();
         } else {
-            if (!SOCIAL_CONFIG.google.webClientId && !SOCIAL_CONFIG.google.iosClientId && !SOCIAL_CONFIG.google.androidClientId) {
-                setErrorMessage('Please configure Google Client IDs in src/firebase/socialConfig.ts to use Google login on mobile devices.');
-                return;
-            }
-            if (googleRequest) {
-                googlePromptAsync();
-            } else {
-                setErrorMessage('Google Sign In is initializing, please try again.');
-            }
+            setErrorMessage('Google Sign In is initializing, please try again.');
         }
     };
 
     const handleGithubLogin = async () => {
         if (Platform.OS === 'web') {
-            setLoading(true);
-            setErrorMessage(null);
-            try {
-                const success = await LoginWithGithub();
-                if (success) {
-                    router.replace('/application');
-                }
-            } catch (e: any) {
-                console.error('Github Web Login Error:', e);
-                setErrorMessage(formatAuthError(e));
-            } finally {
-                setLoading(false);
-            }
+            setErrorMessage('GitHub login is currently supported only on native mobile builds.');
+            return;
+        }
+
+        if (!SOCIAL_CONFIG.github.clientId) {
+            setErrorMessage('Please configure GitHub Client ID in src/firebase/socialConfig.ts to use GitHub login on mobile devices.');
+            return;
+        }
+        if (githubRequest) {
+            githubPromptAsync();
         } else {
-            if (!SOCIAL_CONFIG.github.clientId) {
-                setErrorMessage('Please configure GitHub Client ID in src/firebase/socialConfig.ts to use GitHub login on mobile devices.');
-                return;
-            }
-            if (githubRequest) {
-                githubPromptAsync();
-            } else {
-                setErrorMessage('GitHub Sign In is initializing, please try again.');
-            }
+            setErrorMessage('GitHub Sign In is initializing, please try again.');
         }
     };
 

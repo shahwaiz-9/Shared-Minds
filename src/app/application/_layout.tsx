@@ -1,85 +1,159 @@
+import { Colors } from "@/utlis/color";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+
+function TabIcon({
+    name,
+    nameFilled,
+    color,
+    size,
+    focused,
+}: {
+    name: IoniconsName;
+    nameFilled: IoniconsName;
+    color: string;
+    size: number;
+    focused: boolean;
+}) {
+    return (
+        <View style={styles.iconWrapper}>
+            <Ionicons
+                name={focused ? nameFilled : name}
+                size={size}
+                color={color}
+            />
+            {focused && <View style={styles.activeIndicator} />}
+        </View>
+    );
+}
 
 export default function ApplicationLayout() {
     return (
         <Tabs
-            screenOptions={({ route }) => ({
+            screenOptions={{
                 headerShown: false,
                 tabBarShowLabel: true,
                 tabBarStyle: {
-                    backgroundColor: "#fff",
-                    borderTopWidth: 1,
-                    borderTopColor: "#f0f0f0",
-                    height: 80,
-                    paddingBottom: 10,
+                    position: "absolute",
+                    left: 20,
+                    right: 20,
+                    bottom: Platform.OS === "ios" ? 28 : 16,
+                    height: 70,
+                    borderRadius: 28,
+                    backgroundColor: Colors.white,
+                    borderTopWidth: 0,
+                    shadowColor: Colors.primary,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.14,
+                    shadowRadius: 24,
+                    elevation: 16,
+                    paddingBottom: 0,
+                },
+                tabBarActiveTintColor: Colors.primary,
+                tabBarInactiveTintColor: "#94A3B8",
+                tabBarLabelStyle: {
+                    fontSize: 10,
+                    fontFamily: "Outfit-SemiBold",
+                    marginTop: 2,
+                    marginBottom: 8,
+                },
+                tabBarItemStyle: {
                     paddingTop: 10,
                 },
-                tabBarActiveTintColor: "#007AFF",
-                tabBarInactiveTintColor: "#999",
-                tabBarLabelStyle: {
-                    fontSize: 12,
-                    marginTop: -5,
-                },
-            })}
+            }}
         >
-            {/* Home Tab */}
+            {/* Home */}
             <Tabs.Screen
                 name="home"
                 options={{
-                    tabBarLabel: "Home",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" color={color} size={size} />
+                    title: "Home",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon
+                            name="home-outline"
+                            nameFilled="home"
+                            color={color}
+                            size={size}
+                            focused={focused}
+                        />
                     ),
                 }}
             />
 
-            {/* Friends Tab */}
+            {/* Network */}
             <Tabs.Screen
                 name="friends"
                 options={{
-                    tabBarLabel: "Friends",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="people" color={color} size={size} />
+                    title: "Network",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon
+                            name="people-outline"
+                            nameFilled="people"
+                            color={color}
+                            size={size}
+                            focused={focused}
+                        />
                     ),
                 }}
             />
 
-            {/* Create/Plus Tab - Centered with larger icon */}
+            {/* Create (FAB center) */}
             <Tabs.Screen
                 name="create"
                 options={{
-                    tabBarLabel: "Create",
-                    tabBarIcon: ({ color, size }) => (
-                        <View style={styles.centerIconContainer}>
-                            <View style={styles.centerIconCircle}>
-                                <Ionicons name="add" color="#fff" size={32} />
-                            </View>
+                    title: "",
+                    tabBarIcon: () => (
+                        <View style={styles.centerButton}>
+                            <Ionicons name="add" size={32} color={Colors.white} />
                         </View>
+                    ),
+                    tabBarLabelStyle: { display: "none" },
+                    tabBarItemStyle: { paddingTop: 15 },
+                }}
+            />
+
+            {/* Discover */}
+            <Tabs.Screen
+                name="discover"
+                options={{
+                    title: "Discover",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon
+                            name="compass-outline"
+                            nameFilled="compass"
+                            color={color}
+                            size={size}
+                            focused={focused}
+                        />
                     ),
                 }}
             />
 
-            {/* Profile Tab */}
+            {/* Profile */}
             <Tabs.Screen
                 name="profile"
                 options={{
-                    tabBarLabel: "Profile",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="person" color={color} size={size} />
+                    title: "Profile",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon
+                            name="person-outline"
+                            nameFilled="person"
+                            color={color}
+                            size={size}
+                            focused={focused}
+                        />
                     ),
                 }}
             />
 
-            {/* Settings Tab */}
+            {/* Settings — exists on disk but hidden from tab bar */}
             <Tabs.Screen
                 name="settings"
                 options={{
-                    tabBarLabel: "Settings",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="settings" color={color} size={size} />
-                    ),
+                    href: null,
+                    title: "Settings",
                 }}
             />
         </Tabs>
@@ -87,17 +161,29 @@ export default function ApplicationLayout() {
 }
 
 const styles = StyleSheet.create({
-    centerIconContainer: {
-        justifyContent: "center",
+    iconWrapper: {
         alignItems: "center",
+        justifyContent: "center",
     },
-    centerIconCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: "#007AFF",
+    activeIndicator: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: Colors.primary,
+        marginTop: 3,
+    },
+    centerButton: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: Colors.primary,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 20,
+        // marginBottom: Platform.OS === "ios" ? 18 : 24,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 14,
+        // elevation: 10,
     },
 });
