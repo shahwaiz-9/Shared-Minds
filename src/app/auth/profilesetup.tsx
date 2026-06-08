@@ -1,4 +1,8 @@
 import CustomButton from '@/components/button';
+import { auth } from '@/firebase/config';
+import { User } from '@/interface/user';
+import { useAuthStore } from '@/store';
+import { uploadToCloudinary } from '@/utlis/cloudinary';
 import { Colors } from '@/utlis/color';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -65,8 +69,49 @@ export default function ProfileSetupScreen() {
         }
     };
 
-    const handleContinue = () => {
-        // TODO: Save profile data to backend/Firebase
+    const handleImageUpload = async (pickerResult: any) => {
+        try {
+            const imageUrl = await uploadToCloudinary(pickerResult.uri);
+            console.log('Image uploaded successfully:', imageUrl);
+
+            return imageUrl;
+        } catch (error) {
+            console.error('Upload failed:', error);
+        }
+    };
+
+    const setUser = useAuthStore((state) => state.setUser);
+
+    const handleContinue = async () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            console.error('No authenticated user available for profile setup.');
+            return;
+        }
+
+        const coveruri = coverUri ? (await handleImageUpload({ uri: coverUri })) || null : null;
+        const profileuri = avatarUri ? (await handleImageUpload({ uri: avatarUri })) || null : null;
+
+        if (profileuri) {
+            try {
+                await currentUser.updateProfile({ photoURL: profileuri });
+            } catch (error) {
+                console.error('Failed to update auth profile photoURL:', error);
+            }
+        }
+
+        const user: User = {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoURL: profileuri ?? currentUser.photoURL,
+            coverPhotoURL: coveruri,
+            bio: bio.trim() || null,
+            createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
+            updatedAt: new Date(),
+        };
+
+        setUser(user);
         router.replace('/application/' as any);
     };
 

@@ -69,7 +69,7 @@ export default function login() {
 
         try {
             await firebaseLogin(email.trim(), password);
-            router.replace('/application/home');
+            router.replace('/auth/profilesetup');
         } catch (error: any) {
             console.error('Login error:', error);
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -179,6 +179,12 @@ export default function login() {
             setErrorMessage('GitHub Sign In is initializing, please try again.');
         }
     };
+
+
+
+
+
+
 
     return (
         <KeyboardAwareScrollView

@@ -2,17 +2,19 @@ import CustomButton from '@/components/button';
 import CustomTextField from '@/components/textfield';
 import { register as firebaseRegister } from '@/firebase/auth';
 import { auth } from '@/firebase/config';
+import { User } from '@/interface/user';
+import { useAuthStore } from '@/store';
 import { Colors } from '@/utlis/color';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 WebBrowser.maybeCompleteAuthSession();
 
 export default function signup() {
     const router = useRouter();
+    const setUser = useAuthStore((state) => state.setUser);
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -47,6 +49,22 @@ export default function signup() {
                     displayName: name.trim(),
                 });
             }
+
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                const stateUser: User = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName,
+                    photoURL: currentUser.photoURL,
+                    coverPhotoURL: null,
+                    bio: null,
+                    createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
+                    updatedAt: new Date(),
+                };
+                setUser(stateUser);
+            }
+
             router.replace('/auth/profilesetup');
         } catch (error: any) {
             console.error('Signup error:', error);
