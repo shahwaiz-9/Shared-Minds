@@ -17,6 +17,9 @@ interface CustomPopupProps {
     buttonIcon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
     onClose: () => void;
+    mainIcon?: keyof typeof Ionicons.glyphMap;
+    mainIconColor?: string;
+    buttonColor?: string;
 }
 
 const CustomPopup: React.FC<CustomPopupProps> = ({
@@ -27,6 +30,9 @@ const CustomPopup: React.FC<CustomPopupProps> = ({
     buttonIcon,
     onPress,
     onClose,
+    mainIcon = "checkmark-circle",
+    mainIconColor = "#090949",
+    buttonColor = "#090949",
 }) => {
     return (
         <Modal
@@ -45,9 +51,9 @@ const CustomPopup: React.FC<CustomPopupProps> = ({
                 >
                     <View style={styles.iconContainer}>
                         <Ionicons
-                            name="checkmark-circle"
+                            name={mainIcon}
                             size={64}
-                            color="#090949"
+                            color={mainIconColor}
                         />
                     </View>
 
@@ -60,7 +66,7 @@ const CustomPopup: React.FC<CustomPopupProps> = ({
                     </Text>
 
                     <TouchableOpacity
-                        style={styles.button}
+                        style={[styles.button, { backgroundColor: buttonColor }]}
                         activeOpacity={0.8}
                         onPress={onPress}
                     >
@@ -132,7 +138,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#090949',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 24,

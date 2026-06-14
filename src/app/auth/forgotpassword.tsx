@@ -1,4 +1,5 @@
 import CustomButton from '@/components/button';
+import CustomPopup from '@/components/popup'; // Imported CustomPopup
 import CustomTextField from '@/components/textfield';
 import { forgotPassword as firebaseForgotPassword } from '@/firebase/auth/auth';
 import { Colors } from '@/utlis/color';
@@ -10,36 +11,46 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 export default function forgotpassword() {
     const router = useRouter();
     const [email, setEmail] = useState('');
+    const [showPopup, setShowPopup] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [popupType, setPopupType] = useState<'success' | 'error'>('error');
+    const [popupMessage, setPopupMessage] = useState('');
 
     const handleReset = async () => {
         if (!email.trim()) {
-            setErrorMessage('Please enter your email address.');
-            setSuccessMessage(null);
+            setPopupMessage('Please enter your email address.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         setLoading(true);
-        setErrorMessage(null);
-        setSuccessMessage(null);
 
         try {
             await firebaseForgotPassword(email.trim());
-            setSuccessMessage('Password reset email sent! Please check your inbox.');
+            setPopupMessage('Password reset email sent! Please check your inbox.');
+            setPopupType('success');
+            setShowPopup(true);
         } catch (error: any) {
             console.error('Password reset error:', error);
+            let msg = 'An error occurred. Please try again.';
             if (error.code === 'auth/user-not-found') {
-                setErrorMessage('No account found with this email address.');
+                msg = 'No account found with this email address.';
             } else if (error.code === 'auth/invalid-email') {
-                setErrorMessage('Please enter a valid email address.');
+                msg = 'Please enter a valid email address.';
             } else {
-                setErrorMessage(error.message || 'An error occurred. Please try again.');
+                msg = error.message || msg;
             }
+            setPopupMessage(msg);
+            setPopupType('error');
+            setShowPopup(true);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
     };
 
     return (
@@ -86,34 +97,6 @@ export default function forgotpassword() {
             >
                 Enter your email address below and we'll send you a link to reset your password.
             </Text>
-
-            {/* Error Message */}
-            {errorMessage && (
-                <Text style={{
-                    color: Colors.error,
-                    marginBottom: 15,
-                    fontFamily: 'Outfit-Medium',
-                    fontSize: 14,
-                    textAlign: 'center',
-                    width: '85%',
-                }}>
-                    {errorMessage}
-                </Text>
-            )}
-
-            {/* Success Message */}
-            {successMessage && (
-                <Text style={{
-                    color: Colors.success,
-                    marginBottom: 15,
-                    fontFamily: 'Outfit-Medium',
-                    fontSize: 14,
-                    textAlign: 'center',
-                    width: '85%',
-                }}>
-                    {successMessage}
-                </Text>
-            )}
 
             {/* Email Field */}
             <View style={{ marginBottom: 20 }}>
@@ -167,6 +150,20 @@ export default function forgotpassword() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Custom Popup Implementation */}
+            <CustomPopup
+                visible={showPopup}
+                title={popupType === 'success' ? 'Success' : 'Error'}
+                message={popupMessage}
+                buttonText={popupType === 'success' ? 'Continue' : 'Try Again'}
+                buttonIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle-outline'}
+                mainIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle'}
+                mainIconColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                buttonColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                onPress={handleClosePopup}
+                onClose={handleClosePopup}
+            />
         </KeyboardAwareScrollView>
     );
 }

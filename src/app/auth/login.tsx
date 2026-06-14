@@ -10,10 +10,9 @@ import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import CustomTextField from '../../components/textfield';
-import { User } from '@/interface/user';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function login() {
@@ -22,7 +21,9 @@ export default function login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupType, setPopupType] = useState<'success' | 'error'>('error');
+    const [popupMessage, setPopupMessage] = useState('');
 
     const setUser = useAuthStore((state) => state.setUser);
 
@@ -62,38 +63,41 @@ export default function login() {
         }
     }, [githubResponse]);
 
+    const handleClosePopup = () => {
+        setShowPopup(false);
+    };
+
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
-            setErrorMessage('Please fill in all fields.');
+            setPopupMessage('Please fill in all fields.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         setLoading(true);
-        setErrorMessage(null);
 
         try {
             const result = await firebaseLogin(email.trim(), password);
             const userDoc = await getUserDocument(result.user.uid);
-            // const user = result.user
-            // setUser(user)
             if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
                 router.replace('/application/home' as any);
             } else {
-                // const user: User {
-
-
-                // }
                 router.replace('/auth/profilesetup' as any);
             }
         } catch (error: any) {
             console.error('Login error:', error);
+            let msg = 'An error occurred during sign in.';
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                setErrorMessage('Invalid email or password.');
+                msg = 'Invalid email or password.';
             } else if (error.code === 'auth/invalid-email') {
-                setErrorMessage('Please enter a valid email address.');
+                msg = 'Please enter a valid email address.';
             } else {
-                setErrorMessage(error.message || 'An error occurred during sign in.');
+                msg = error.message || msg;
             }
+            setPopupMessage(msg);
+            setPopupType('error');
+            setShowPopup(true);
         } finally {
             setLoading(false);
         }
@@ -108,7 +112,6 @@ export default function login() {
 
     const handleNativeGoogleLogin = async (idToken: string) => {
         setLoading(true);
-        setErrorMessage(null);
 
         try {
             const firebaseUser = await LoginWithGoogle(idToken);
@@ -120,7 +123,9 @@ export default function login() {
             }
         } catch (e: any) {
             console.error('Google Native Login Error:', e);
-            setErrorMessage(e?.message || 'Google Native Login failed.');
+            setPopupMessage(e?.message || 'Google Native Login failed.');
+            setPopupType('error');
+            setShowPopup(true);
         } finally {
             setLoading(false);
         }
@@ -128,7 +133,6 @@ export default function login() {
 
     const handleNativeGithubLogin = async (code: string) => {
         setLoading(true);
-        setErrorMessage(null);
         try {
             if (!SOCIAL_CONFIG.github.clientSecret) {
                 throw new Error('GitHub Client Secret is not configured in socialConfig.ts');
@@ -164,7 +168,9 @@ export default function login() {
             }
         } catch (e: any) {
             console.error('GitHub Native Login Error:', e);
-            setErrorMessage(e?.message || 'GitHub Native Login failed.');
+            setPopupMessage(e?.message || 'GitHub Native Login failed.');
+            setPopupType('error');
+            setShowPopup(true);
         } finally {
             setLoading(false);
         }
@@ -172,36 +178,48 @@ export default function login() {
 
     const handleGoogleLogin = async () => {
         if (Platform.OS === 'web') {
-            setErrorMessage('Google login is currently supported only on native mobile builds.');
+            setPopupMessage('Google login is currently supported only on native mobile builds.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         if (!SOCIAL_CONFIG.google.webClientId && !SOCIAL_CONFIG.google.iosClientId && !SOCIAL_CONFIG.google.androidClientId) {
-            setErrorMessage('Please configure Google Client IDs in src/firebase/socialConfig.ts to use Google login on mobile devices.');
+            setPopupMessage('Please configure Google Client IDs in src/firebase/socialConfig.ts to use Google login on mobile devices.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         if (googleRequest) {
             googlePromptAsync();
         } else {
-            setErrorMessage('Google Sign In is initializing, please try again.');
+            setPopupMessage('Google Sign In is initializing, please try again.');
+            setPopupType('error');
+            setShowPopup(true);
         }
     };
 
     const handleGithubLogin = async () => {
         if (Platform.OS === 'web') {
-            setErrorMessage('GitHub login is currently supported only on native mobile builds.');
+            setPopupMessage('GitHub login is currently supported only on native mobile builds.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         if (!SOCIAL_CONFIG.github.clientId) {
-            setErrorMessage('Please configure GitHub Client ID in src/firebase/socialConfig.ts to use GitHub login on mobile devices.');
+            setPopupMessage('Please configure GitHub Client ID in src/firebase/socialConfig.ts to use GitHub login on mobile devices.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
         if (githubRequest) {
             githubPromptAsync();
         } else {
-            setErrorMessage('GitHub Sign In is initializing, please try again.');
+            setPopupMessage('GitHub Sign In is initializing, please try again.');
+            setPopupType('error');
+            setShowPopup(true);
         }
     };
 
@@ -223,6 +241,7 @@ export default function login() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
         >
+            <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
             <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 100 }}>
                 <Image source={require('../../../assets/images/logo.png')} style={{ width: 140, height: 140, marginBottom: 20 }} />
             </View>
@@ -236,20 +255,6 @@ export default function login() {
             }}>
                 Welcome Back!
             </Text>
-
-            {/* Error Message */}
-            {errorMessage && (
-                <Text style={{
-                    color: Colors.error,
-                    marginBottom: 15,
-                    fontFamily: 'Outfit-Medium',
-                    fontSize: 14,
-                    textAlign: 'center',
-                    width: '85%',
-                }}>
-                    {errorMessage}
-                </Text>
-            )}
 
             <View style={{
                 marginBottom: 10,
@@ -442,6 +447,19 @@ export default function login() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            <CustomPopup
+                visible={showPopup}
+                title={popupType === 'success' ? 'Success' : 'Error'}
+                message={popupMessage}
+                buttonText={popupType === 'success' ? 'Continue' : 'Try Again'}
+                buttonIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle-outline'}
+                mainIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle'}
+                mainIconColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                buttonColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                onPress={handleClosePopup}
+                onClose={handleClosePopup}
+            />
         </KeyboardAwareScrollView>
     );
 }

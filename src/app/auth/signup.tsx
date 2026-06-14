@@ -8,7 +8,7 @@ import { Colors } from '@/utlis/color';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,26 +21,37 @@ export default function signup() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupType, setPopupType] = useState<'success' | 'error'>('error');
+    const [popupMessage, setPopupMessage] = useState('');
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
+    };
 
     const handleSignUp = async () => {
         if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-            setErrorMessage('All fields are required.');
+            setPopupMessage('All fields are required.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         if (password !== confirmPassword) {
-            setErrorMessage('Passwords do not match.');
+            setPopupMessage('Passwords do not match.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         if (password.length < 6) {
-            setErrorMessage('Password must be at least 6 characters long.');
+            setPopupMessage('Password must be at least 6 characters long.');
+            setPopupType('error');
+            setShowPopup(true);
             return;
         }
 
         setLoading(true);
-        setErrorMessage(null);
 
         try {
             await firebaseRegister(email.trim(), password);
@@ -68,15 +79,19 @@ export default function signup() {
             router.replace('/auth/profilesetup');
         } catch (error: any) {
             console.error('Signup error:', error);
+            let msg = 'An error occurred during account creation.';
             if (error.code === 'auth/email-already-in-use') {
-                setErrorMessage('This email address is already in use.');
+                msg = 'This email address is already in use.';
             } else if (error.code === 'auth/invalid-email') {
-                setErrorMessage('Please enter a valid email address.');
+                msg = 'Please enter a valid email address.';
             } else if (error.code === 'auth/weak-password') {
-                setErrorMessage('The password is too weak.');
+                msg = 'The password is too weak.';
             } else {
-                setErrorMessage(error.message || 'An error occurred during account creation.');
+                msg = error.message || msg;
             }
+            setPopupMessage(msg);
+            setPopupType('error');
+            setShowPopup(true);
         } finally {
             setLoading(false);
         }
@@ -101,6 +116,7 @@ export default function signup() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
         >
+            <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
             <View style={{ alignItems: 'center', marginBottom: 15, marginTop: 60 }}>
                 <Image
                     source={require('../../../assets/images/logo.png')}
@@ -119,20 +135,6 @@ export default function signup() {
             >
                 Create Account
             </Text>
-
-            {/* Error Message */}
-            {errorMessage && (
-                <Text style={{
-                    color: Colors.error,
-                    marginBottom: 15,
-                    fontFamily: 'Outfit-Medium',
-                    fontSize: 14,
-                    textAlign: 'center',
-                    width: '85%',
-                }}>
-                    {errorMessage}
-                </Text>
-            )}
 
             {/* Name Field */}
             <View style={{ marginBottom: 10 }}>
@@ -254,6 +256,19 @@ export default function signup() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            <CustomPopup
+                visible={showPopup}
+                title={popupType === 'success' ? 'Success' : 'Error'}
+                message={popupMessage}
+                buttonText={popupType === 'success' ? 'Continue' : 'Try Again'}
+                buttonIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle-outline'}
+                mainIcon={popupType === 'success' ? 'checkmark-circle' : 'alert-circle'}
+                mainIconColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                buttonColor={popupType === 'success' ? '#10B981' : '#EF4444'}
+                onPress={handleClosePopup}
+                onClose={handleClosePopup}
+            />
         </KeyboardAwareScrollView>
     );
 }

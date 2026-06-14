@@ -178,6 +178,7 @@ export default function ProfileSetupScreen() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
+                <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
                 {/* ── Cover Photo Section ── */}
                 <TouchableOpacity
                     activeOpacity={0.85}
