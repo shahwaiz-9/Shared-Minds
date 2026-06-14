@@ -1,20 +1,15 @@
+import DeleteSubjectModal from "@/components/delete-subject-modal";
 import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
     SafeAreaView,
     ScrollView,
     StatusBar,
     Text,
-    TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 
 import EditSubjectModal from "../components/edit-subject-modal";
@@ -67,6 +62,10 @@ export default function SubjectDetailsScreen() {
             fetchOwner();
         }
     }, [subject]);
+
+    const handleOnSave = () => {
+
+    }
 
     if (!subject) {
         return (
@@ -319,70 +318,19 @@ export default function SubjectDetailsScreen() {
             />
 
             {/* DESTRUCTION SAFEGUARD MODAL */}
-            <Modal
+            <DeleteSubjectModal
                 visible={deleteModalVisible}
-                animationType="fade"
-                transparent
-                statusBarTranslucent
-                onRequestClose={() => setDeleteModalVisible(false)}
-            >
-                <Pressable style={{ flex: 1, backgroundColor: "rgba(9, 9, 73, 0.45)", justifyContent: "flex-end" }} onPress={() => setDeleteModalVisible(false)}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === "ios" ? "padding" : "height"}
-                        style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
-                    >
-                        <Pressable style={{ width: "100%", backgroundColor: Colors.white, borderRadius: 24, padding: 24, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 8 }} onPress={() => { }}>
-                            <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: "#FEE2E2", justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
-                                <Ionicons name="warning" size={40} color={Colors.error} />
-                            </View>
+                onClose={() => {
+                    setDeleteConfirmText("");
+                    setDeleteModalVisible(false);
+                }}
+                subjectName={subject.subjectname}
+                confirmText={deleteConfirmText}
+                onConfirmTextChange={setDeleteConfirmText}
+                onDelete={handleDelete}
+                isDeleting={isDeleting}
+            />
 
-                            <Text style={{ fontSize: 20, fontFamily: "Outfit-Bold", color: Colors.error, marginBottom: 8 }}>Delete Subject?</Text>
-                            <Text style={{ fontSize: 14, fontFamily: "Outfit-Regular", color: Colors.textSecondary, textAlign: "center", lineHeight: 20, marginBottom: 20 }}>
-                                This will permanently remove <Text style={{ fontWeight: "bold", color: Colors.textPrimary }}>{subject.subjectname}</Text> and all its notes. This action is irreversible.
-                            </Text>
-
-                            <Text style={{ fontSize: 13, fontFamily: "Outfit-Medium", color: Colors.textTertiary, alignSelf: "flex-start", marginBottom: 6 }}>
-                                Type the subject name exactly to confirm:
-                            </Text>
-                            <TextInput
-                                style={{ width: "100%", borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12, height: 46, paddingHorizontal: 12, fontFamily: "Outfit-Regular", color: Colors.textPrimary, marginBottom: 20 }}
-                                placeholder={subject.subjectname}
-                                value={deleteConfirmText}
-                                onChangeText={setDeleteConfirmText}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
-
-                            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
-                                <TouchableOpacity
-                                    style={{ flex: 1, height: 48, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, justifyContent: "center", alignItems: "center" }}
-                                    onPress={() => {
-                                        setDeleteConfirmText("");
-                                        setDeleteModalVisible(false);
-                                    }}
-                                >
-                                    <Text style={{ fontFamily: "Outfit-Medium", color: Colors.textSecondary, fontSize: 15 }}>Cancel</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[
-                                        { flex: 1, height: 48, borderRadius: 12, backgroundColor: Colors.error, justifyContent: "center", alignItems: "center" },
-                                        deleteConfirmText !== subject.subjectname && { backgroundColor: "#FCA5A5" },
-                                    ]}
-                                    onPress={handleDelete}
-                                    disabled={deleteConfirmText !== subject.subjectname || isDeleting}
-                                >
-                                    {isDeleting ? (
-                                        <ActivityIndicator size="small" color={Colors.white} />
-                                    ) : (
-                                        <Text style={{ fontFamily: "Outfit-Bold", color: Colors.white, fontSize: 15 }}>Delete</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        </Pressable>
-                    </KeyboardAvoidingView>
-                </Pressable>
-            </Modal>
         </View>
     );
 }

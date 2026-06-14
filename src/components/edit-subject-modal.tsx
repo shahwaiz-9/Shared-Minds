@@ -4,17 +4,16 @@ import {
   Animated,
   Dimensions,
   Easing,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Colors } from "../utlis/color";
 import CustomButton from "./button";
 import CustomTextField from "./textfield";
@@ -55,13 +54,11 @@ export default function EditSubjectModal({
   onSave,
 }: EditSubjectModalProps) {
   const slideAnim = useRef(new Animated.Value(0)).current;
-
   const [isModalMounted, setIsModalMounted] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setIsModalMounted(true); // Mount the modal
-      // Trigger animation
+      setIsModalMounted(true);
       Animated.timing(slideAnim, {
         toValue: 1,
         duration: 400,
@@ -69,7 +66,6 @@ export default function EditSubjectModal({
         useNativeDriver: true,
       }).start();
     } else {
-      // Play closing animation then unmount
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 300,
@@ -97,7 +93,8 @@ export default function EditSubjectModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        {/* Animated Overlay */}
         <Animated.View
           style={{
             ...StyleSheet.absoluteFill,
@@ -108,307 +105,84 @@ export default function EditSubjectModal({
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}
-          keyboardVerticalOffset={Platform.OS === "ios" ? -BOTTOM_INSET : 0}
+        {/* Animated Sheet Container */}
+        <Animated.View
+          style={{
+            backgroundColor: Colors.white,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            maxHeight: SHEET_MAX_HEIGHT,
+            transform: [{ translateY: sheetTranslateY }],
+          }}
         >
-          <Animated.View
-            style={{
-              backgroundColor: Colors.white,
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              maxHeight: SHEET_MAX_HEIGHT,
-              transform: [{ translateY: sheetTranslateY }],
-            }}
+          <KeyboardAwareScrollView
+            enableOnAndroid={true}
+            extraScrollHeight={100}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: BOTTOM_INSET + 20 }}
           >
-            <Pressable onPress={() => { }}>
-              <View style={{ paddingTop: 10, paddingBottom: BOTTOM_INSET }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 4,
-                    backgroundColor: "#E2E8F0",
-                    borderRadius: 2,
-                    alignSelf: "center",
-                    marginBottom: 16,
-                  }}
-                />
+            <Pressable>
+              <View style={{ paddingTop: 10 }}>
+                {/* Drag Handle */}
+                <View style={{ width: 40, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 16 }} />
 
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    paddingHorizontal: 24,
-                    marginBottom: 20,
-                  }}
-                >
+                {/* Header Section */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, marginBottom: 20 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    {/* Icon Circle */}
-                    <View
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        backgroundColor: Colors.surface, // Adjust based on your theme
-                        justifyContent: "center",
-                        alignItems: "center",
-                        borderWidth: 1,
-                        borderColor: Colors.border,
-                      }}
-                    >
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Colors.border }}>
                       <Feather name="edit-3" size={18} color={Colors.primary} />
                     </View>
-
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontFamily: "Outfit-Bold",
-                        color: Colors.textPrimary,
-                      }}
-                    >
-                      Edit Subject
-                    </Text>
+                    <Text style={{ fontSize: 20, fontFamily: "Outfit-Bold", color: Colors.textPrimary }}>Edit Subject</Text>
                   </View>
                   <TouchableOpacity onPress={onClose}>
                     <Feather name="x" size={20} color={Colors.textTertiary} />
                   </TouchableOpacity>
-
                 </View>
-                <View
-                  style={{
-                    height: 1,
-                    width: '90%',
-                    backgroundColor: Colors.border,
-                    alignSelf: 'center',
-                    marginBottom: 20,
-                  }}
-                />
 
+                <View style={{ height: 1, width: '90%', backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 }} />
 
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: "Outfit-Bold",
-                      color: Colors.textPrimary,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Subject Name *
-                  </Text>
-                  <CustomTextField
-                    placeholder="Subject Name"
-                    value={subjectName}
-                    onChangeText={onNameChange}
-                    onFocus={() => { }}
-                    onBlur={() => { }}
-                    containerStyle={{
-                      borderColor: Colors.border,
-                      backgroundColor: Colors.surface,
-                      borderRadius: 14,
-                      height: 50,
-                    }}
-                    inputStyle={{
-                      fontFamily: "Outfit-Regular",
-                      color: Colors.textPrimary,
-                    }}
-                  />
+                {/* Form Fields */}
+                <View style={{ paddingHorizontal: 24 }}>
+                  <Text style={{ fontSize: 14, fontFamily: "Outfit-Bold", color: Colors.textPrimary, marginBottom: 6 }}>Subject Name *</Text>
+                  <CustomTextField placeholder="Subject Name" value={subjectName} onChangeText={onNameChange} containerStyle={{ borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: 14, height: 50 }} />
 
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: "Outfit-Bold",
-                      color: Colors.textPrimary,
-                      marginBottom: 6,
-                      marginTop: 14,
-                    }}
-                  >
-                    Subject Code *
-                  </Text>
-                  <CustomTextField
-                    placeholder="Subject Code"
-                    value={subjectCode}
-                    onChangeText={onCodeChange}
-                    onFocus={() => { }}
-                    onBlur={() => { }}
-                    autoCapitalize="characters"
-                    containerStyle={{
-                      borderColor: Colors.border,
-                      backgroundColor: Colors.surface,
-                      borderRadius: 14,
-                      height: 50,
-                    }}
-                    inputStyle={{
-                      fontFamily: "Outfit-Regular",
-                      color: Colors.textPrimary,
-                    }}
-                  />
+                  <Text style={{ fontSize: 14, fontFamily: "Outfit-Bold", color: Colors.textPrimary, marginBottom: 6, marginTop: 14 }}>Subject Code *</Text>
+                  <CustomTextField placeholder="Subject Code" value={subjectCode} onChangeText={onCodeChange} autoCapitalize="characters" containerStyle={{ borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: 14, height: 50 }} />
 
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: "Outfit-Bold",
-                      color: Colors.textPrimary,
-                      marginBottom: 6,
-                      marginTop: 14,
-                    }}
-                  >
-                    Description
-                  </Text>
-                  <CustomTextField
-                    placeholder="Details or learning outcomes..."
-                    value={subjectDescription}
-                    onChangeText={onDescriptionChange}
-                    onFocus={() => { }}
-                    onBlur={() => { }}
-                    multiline
-                    numberOfLines={3}
-                    containerStyle={{
-                      borderColor: Colors.border,
-                      backgroundColor: Colors.surface,
-                      borderRadius: 14,
-                    }}
-                    inputStyle={{
-                      fontFamily: "Outfit-Regular",
-                      color: Colors.textPrimary,
-                    }}
-                  />
+                  <Text style={{ fontSize: 14, fontFamily: "Outfit-Bold", color: Colors.textPrimary, marginBottom: 6, marginTop: 14 }}>Description</Text>
+                  <CustomTextField placeholder="Details or learning outcomes..." value={subjectDescription} onChangeText={onDescriptionChange} multiline numberOfLines={3} containerStyle={{ borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: 14 }} />
 
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: "Outfit-Bold",
-                      color: Colors.textPrimary,
-                      marginTop: 14,
-                      marginBottom: 8,
-                    }}
-                  >
-                    Visibility
-                  </Text>
+                  <Text style={{ fontSize: 14, fontFamily: "Outfit-Bold", color: Colors.textPrimary, marginTop: 14, marginBottom: 8 }}>Visibility</Text>
+
                   <View style={{ flexDirection: "row", gap: 12 }}>
-                    <TouchableOpacity
-                      style={[
-                        {
-                          flex: 1,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                          borderWidth: 1.5,
-                          borderColor: Colors.border,
-                          borderRadius: 14,
-                          paddingVertical: 12,
-                          backgroundColor: Colors.white,
-                        },
-                        subjectVisibility === "public" && {
-                          backgroundColor: Colors.primary,
-                          borderColor: Colors.primary,
-                        },
-                      ]}
-                      onPress={() => onVisibilityChange("public")}
-                    >
-                      <Feather
-                        name="globe"
-                        size={16}
-                        color={
-                          subjectVisibility === "public"
-                            ? Colors.white
-                            : Colors.primary
-                        }
-                      />
-                      <Text
-                        style={[
-                          {
-                            fontSize: 14,
-                            fontFamily: "Outfit-Medium",
-                            color: Colors.primary,
-                          },
-                          subjectVisibility === "public" && {
-                            color: Colors.white,
-                          },
-                        ]}
+                    {["public", "private"].map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={{
+                          flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                          borderWidth: 1.5, borderColor: subjectVisibility === type ? Colors.primary : Colors.border, borderRadius: 14, paddingVertical: 12,
+                          backgroundColor: subjectVisibility === type ? Colors.primary : Colors.white,
+                        }}
+                        onPress={() => onVisibilityChange(type as "public" | "private")}
                       >
-                        Public
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        {
-                          flex: 1,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                          borderWidth: 1.5,
-                          borderColor: Colors.border,
-                          borderRadius: 14,
-                          paddingVertical: 12,
-                          backgroundColor: Colors.white,
-                        },
-                        subjectVisibility === "private" && {
-                          backgroundColor: Colors.primary,
-                          borderColor: Colors.primary,
-                        },
-                      ]}
-                      onPress={() => onVisibilityChange("private")}
-                    >
-                      <Feather
-                        name="lock"
-                        size={16}
-                        color={
-                          subjectVisibility === "private"
-                            ? Colors.white
-                            : Colors.primary
-                        }
-                      />
-                      <Text
-                        style={[
-                          {
-                            fontSize: 14,
-                            fontFamily: "Outfit-Medium",
-                            color: Colors.primary,
-                          },
-                          subjectVisibility === "private" && {
-                            color: Colors.white,
-                          },
-                        ]}
-                      >
-                        Private
-                      </Text>
-                    </TouchableOpacity>
+                        <Feather name={type === "public" ? "globe" : "lock"} size={16} color={subjectVisibility === type ? Colors.white : Colors.primary} />
+                        <Text style={{ fontSize: 14, fontFamily: "Outfit-Medium", color: subjectVisibility === type ? Colors.white : Colors.primary }}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </ScrollView>
 
-                <View
-                  style={{
-                    paddingHorizontal: 24,
-                    paddingTop: 12,
-                    marginBottom: 10,
-                    marginTop: 10,
-                    paddingBottom: Platform.OS === "ios" ? 8 : 16,
-                    alignItems: "center",
-                    opacity: isFormValid ? 1 : 0.5,
-                  }}
-                >
-                  <CustomButton
-                    title="Save Changes"
-                    onPress={isFormValid ? onSave : () => { }}
-                    type="simple"
-                    loading={loading}
-                  />
+                  {/* Save Button */}
+                  <View style={{ marginTop: 24, marginBottom: 24, opacity: isFormValid ? 1 : 0.5 }}>
+                    <CustomButton title="Save Changes" onPress={isFormValid ? onSave : () => { }} type="simple" loading={loading} />
+                  </View>
                 </View>
               </View>
             </Pressable>
-          </Animated.View>
-        </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+        </Animated.View>
       </View>
     </Modal>
   );
