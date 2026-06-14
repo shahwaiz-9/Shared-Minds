@@ -65,6 +65,7 @@ export default function ApplicationLayout() {
                 },
             }}
         >
+
             {/* Home */}
             <Tabs.Screen
                 name="home"

@@ -51,6 +51,10 @@ export default function RootLayout() {
         name="forgotpassword"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen
+        name="subject-details"
+        options={{ animation: 'slide_from_right' }}
+      />
     </Stack>
   );
 }

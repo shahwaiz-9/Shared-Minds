@@ -6,6 +6,9 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    type StyleProp,
+    type TextStyle,
+    type ViewStyle,
 } from 'react-native';
 import { Colors } from '../utlis/color';
 
@@ -14,15 +17,27 @@ type CustomTextFieldProps = {
     placeholder: string;
     value: string;
     onChangeText: (text: string) => void;
+    multiline?: boolean;
+    numberOfLines?: number;
+    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+    onFocus?: () => void;
+    onBlur?: () => void;
+    containerStyle?: StyleProp<ViewStyle>;
+    inputStyle?: StyleProp<TextStyle>;
 };
-
-
 
 export default function CustomTextField({
     type = 'simple',
     placeholder,
     value,
     onChangeText,
+    multiline = false,
+    numberOfLines = 1,
+    autoCapitalize = 'none',
+    onFocus,
+    onBlur,
+    containerStyle,
+    inputStyle,
 }: CustomTextFieldProps) {
     const width = Dimensions.get('window').width;
 
@@ -35,19 +50,36 @@ export default function CustomTextField({
                 styles.container,
                 {
                     width: width * 0.9,
+                    minHeight: multiline ? 120 : 58,
+                    alignItems: multiline ? 'flex-start' : 'center',
                     borderColor: focused ? Colors.primary : '#D9D9D9',
                 },
+                containerStyle,
             ]}
         >
             <TextInput
-                style={styles.input}
+                style={[
+                    styles.input,
+                    multiline && styles.multilineInput,
+                    inputStyle,
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor="#8E8E93"
                 value={value}
                 onChangeText={onChangeText}
                 secureTextEntry={secureText}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
+                onFocus={() => {
+                    setFocused(true);
+                    onFocus?.();
+                }}
+                onBlur={() => {
+                    setFocused(false);
+                    onBlur?.();
+                }}
+                multiline={multiline}
+                numberOfLines={numberOfLines}
+                textAlignVertical={multiline ? 'top' : 'center'}
+                autoCapitalize={autoCapitalize}
             />
 
             {type === 'password' && (
@@ -68,12 +100,10 @@ export default function CustomTextField({
 
 const styles = StyleSheet.create({
     container: {
-        height: 58,
         borderWidth: 1.5,
         borderRadius: 18,
         backgroundColor: '#FFFFFF',
         flexDirection: 'row',
-        alignItems: 'center',
         paddingHorizontal: 16,
 
         shadowColor: '#000',
@@ -92,6 +122,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#090949',
         fontFamily: 'Outfit-Regular',
+        height: '100%',
+    },
+
+    multilineInput: {
+        paddingTop: 12,
     },
 
     iconContainer: {

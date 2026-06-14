@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Colors } from "@/utlis/color";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
 
 export default function ProfileScreen() {
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
             <Text style={styles.title}>Profile</Text>
         </View>
     );

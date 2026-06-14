@@ -1,7 +1,9 @@
 import CustomButton from '@/components/button';
+import CustomPopup from '@/components/popup';
 import { login as firebaseLogin, LoginWithGithub, LoginWithGoogle } from '@/firebase/auth/auth';
 import { SOCIAL_CONFIG } from '@/firebase/auth/socialConfig';
 import { getUserDocument } from '@/firebase/collection/user_collection';
+import { User } from '@/interface/user';
 import { useAuthStore } from '@/store';
 import { Colors } from '@/utlis/color';
 import { AntDesign } from '@expo/vector-icons';
@@ -26,6 +28,31 @@ export default function login() {
     const [popupMessage, setPopupMessage] = useState('');
 
     const setUser = useAuthStore((state) => state.setUser);
+    const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
+    const fetchSubjects = useAuthStore((state) => state.fetchSubjects);
+
+    const updateAuthState = async (firebaseUser: any, firestoreUser: any | null) => {
+        const user: User = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName ?? firestoreUser?.displayName ?? null,
+            photoURL: firebaseUser.photoURL ?? firestoreUser?.photoURL ?? null,
+            coverPhotoURL: firestoreUser?.coverPhotoURL ?? null,
+            bio: firestoreUser?.bio ?? null,
+            createdAt: firestoreUser?.createdAt ? new Date(firestoreUser.createdAt) : new Date(firebaseUser.metadata.creationTime || Date.now()),
+            updatedAt: firestoreUser?.updatedAt ? new Date(firestoreUser.updatedAt) : new Date(),
+        };
+
+        setUser(user);
+        setAuthenticated(true);
+
+        // Retrieving related information
+
+        await fetchSubjects();
+        console.log("Fetched Subjects as well")
+
+        return user;
+    };
 
     // Google Auth Request — uses expo's Google provider for correct discovery + redirect handling
     const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
@@ -79,7 +106,10 @@ export default function login() {
 
         try {
             const result = await firebaseLogin(email.trim(), password);
+            console.log("Auth results: ", result.user)
             const userDoc = await getUserDocument(result.user.uid);
+            updateAuthState(result.user, userDoc);
+
             if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
                 router.replace('/application/home' as any);
             } else {
@@ -116,6 +146,7 @@ export default function login() {
         try {
             const firebaseUser = await LoginWithGoogle(idToken);
             const userDoc = await getUserDocument(firebaseUser.uid);
+            updateAuthState(firebaseUser, userDoc);
             if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
                 router.replace('/application/home' as any);
             } else {
@@ -158,6 +189,7 @@ export default function login() {
             if (data.access_token) {
                 const firebaseUser = await LoginWithGithub(data.access_token);
                 const userDoc = await getUserDocument(firebaseUser.uid);
+                updateAuthState(firebaseUser, userDoc);
                 if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
                     router.replace('/application/home' as any);
                 } else {

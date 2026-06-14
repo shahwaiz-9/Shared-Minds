@@ -1,4 +1,5 @@
 import CustomButton from '@/components/button';
+import CustomPopup from '@/components/popup';
 import CustomTextField from '@/components/textfield';
 import { register as firebaseRegister } from '@/firebase/auth/auth';
 import { auth } from '@/firebase/auth/config';

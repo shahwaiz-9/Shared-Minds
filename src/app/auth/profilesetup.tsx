@@ -155,6 +155,7 @@ export default function ProfileSetupScreen() {
             };
 
             await createUserDocument(user);
+            console.log("Auth results: ", user)
             setUser(user);
             router.replace('/application/home' as any);
         } catch (error: any) {
