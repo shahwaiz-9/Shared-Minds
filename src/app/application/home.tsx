@@ -48,7 +48,11 @@ export default function HomeScreen() {
             <ScrollView style={{ marginTop: 20, paddingHorizontal: 10 }}>
                 {subjects.length > 0 ? (
                     subjects.map((subject) => (
-                        <NotesCard key={subject.subjectid} subject={subject} />
+                        <NotesCard
+                            key={subject.subjectid}
+                            subject={subject}
+                            onPress={() => router.push(`/subject-details?subjectid=${subject.subjectid}`)}
+                        />
                     ))
                 ) : (
                     <View style={{

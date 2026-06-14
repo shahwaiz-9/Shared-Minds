@@ -1,16 +1,16 @@
+import { getUserDocument } from "@/firebase/collection/user_collection";
+import { Subject } from "@/interface/subject";
 import Feather from "@expo/vector-icons/Feather";
 import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../utlis/color";
-import { Subject } from "@/interface/subject";
-import { db } from "@/firebase/auth/config";
-import { getUserDocument } from "@/firebase/collection/user_collection";
 
 type NotesCardProps = {
     subject: Subject;
+    onPress?: () => void;
 };
 
-export default function NotesCard({ subject }: NotesCardProps) {
+export default function NotesCard({ subject, onPress }: NotesCardProps) {
     const [ownerName, setOwnerName] = useState<string>("Loading...");
 
     useEffect(() => {
@@ -28,6 +28,7 @@ export default function NotesCard({ subject }: NotesCardProps) {
 
     return (
         <TouchableOpacity
+            onPress={onPress}
             style={{
                 backgroundColor: Colors.white,
                 borderRadius: 20,
@@ -95,7 +96,7 @@ export default function NotesCard({ subject }: NotesCardProps) {
             />
 
             {/* Subject Code */}
-            {subject.subjectcode ? (
+            {/* {subject.subjectcode ? (
                 <Text
                     style={{
                         fontSize: 13,
@@ -106,7 +107,7 @@ export default function NotesCard({ subject }: NotesCardProps) {
                 >
                     {subject.subjectcode}
                 </Text>
-            ) : null}
+            ) : null} */}
 
             {/* Description */}
             <Text
