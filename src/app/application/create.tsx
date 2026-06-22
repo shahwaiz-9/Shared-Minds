@@ -11,9 +11,8 @@ import {
     View,
 } from "react-native";
 import CustomButton from "../../components/button";
-import CustomTextField from "../../components/textfield";
-// import Header from "../../components/header";
 import CustomPopup from "../../components/popup";
+import CustomTextField from "../../components/textfield";
 import { createSubject } from "../../firebase/collection/subject_collection";
 import { useAuthStore } from "../../store/authStore";
 import { Colors } from "../../utlis/color";
@@ -88,6 +87,7 @@ export default function CreateScreen() {
 
     const handleCreateSubject = async () => {
         if (!isFormValid || loading) return;
+        console.log(user)
 
         if (!user?.uid) {
             showPopup(

@@ -1,9 +1,8 @@
-export interface Document {
-    documentid: string,
-    subjectid: string,
-    filename: string,
-    filetype: string,
-    fileurl: string,
-    createdAt: Date,
-    updatedAt: Date,
+export interface DocumentData {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    createdAt: Date;
+    uploadedBy: string;
 }

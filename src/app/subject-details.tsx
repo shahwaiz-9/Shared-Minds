@@ -249,8 +249,7 @@ export default function SubjectDetailsScreen() {
                     <TouchableOpacity
                         style={{ width: "48%", backgroundColor: Colors.white, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: Colors.border, shadowColor: "#0F172A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 3, marginBottom: 4 }}
                         onPress={() => {
-                            // In the future, this will link to notes list: router.push(`/application/notes?subjectid=${subject.subjectid}`)
-                            alert(`Navigate to Notes list for: ${subject.subjectname}`);
+                            router.push(`/notes?subjectid=${subject.subjectid}`);
                         }}
                     >
                         <View style={{ width: 44, height: 44, borderRadius: 14, justifyContent: "center", alignItems: "center", marginBottom: 12, backgroundColor: "#EEF2FF" }}>
@@ -264,8 +263,7 @@ export default function SubjectDetailsScreen() {
                     <TouchableOpacity
                         style={{ width: "48%", backgroundColor: Colors.white, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: Colors.border, shadowColor: "#0F172A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 3, marginBottom: 4 }}
                         onPress={() => {
-                            // In the future, this launches AI chat: router.push(`/application/chat?subjectid=${subject.subjectid}`)
-                            alert(`Start AI Chat for: ${subject.subjectname}`);
+                            router.push(`/chat?subjectid=${subject.subjectid}`);
                         }}
                     >
                         <View style={{ width: 44, height: 44, borderRadius: 14, justifyContent: "center", alignItems: "center", marginBottom: 12, backgroundColor: "#F0FDF4" }}>

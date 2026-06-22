@@ -1,6 +1,6 @@
-import { db } from '../auth/config';
 import { User } from '@/interface/user';
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
+import { db } from '../auth/config';
 
 /**
  * Fetches a user document from Firestore by UID.
@@ -20,8 +20,8 @@ export const getUserDocument = async (uid: string): Promise<User | null> => {
             photoURL: data.photoURL || null,
             coverPhotoURL: data.coverPhotoURL || null,
             bio: data.bio || null,
-            createdAt: data.createdAt ? (data.createdAt as FirebaseFirestoreTypes.Timestamp).toDate() : new Date(),
-            updatedAt: data.updatedAt ? (data.updatedAt as FirebaseFirestoreTypes.Timestamp).toDate() : new Date(),
+            createdAt: data.createdAt ? (data.createdAt as firestore.FirebaseFirestoreTypes.Timestamp).toDate() : new Date(),
+            updatedAt: data.updatedAt ? (data.updatedAt as firestore.FirebaseFirestoreTypes.Timestamp).toDate() : new Date(),
         };
     } catch (error) {
         console.error('Error fetching user document:', error);
@@ -56,7 +56,7 @@ export const createUserDocument = async (user: User): Promise<void> => {
 export const updateUserDocument = async (uid: string, data: Partial<User>): Promise<void> => {
     try {
         const updateData: any = { ...data };
-        
+
         // Handle dates conversion
         if (data.createdAt) {
             updateData.createdAt = firestore.Timestamp.fromDate(data.createdAt);
@@ -64,7 +64,7 @@ export const updateUserDocument = async (uid: string, data: Partial<User>): Prom
         if (data.updatedAt) {
             updateData.updatedAt = firestore.Timestamp.fromDate(data.updatedAt);
         }
-        
+
         await db.collection('users').doc(uid).update(updateData);
     } catch (error) {
         console.error('Error updating user document:', error);

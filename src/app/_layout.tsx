@@ -55,6 +55,14 @@ export default function RootLayout() {
         name="subject-details"
         options={{ animation: 'slide_from_right' }}
       />
+      <Stack.Screen
+        name="notes"
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="chat"
+        options={{ animation: 'slide_from_right' }}
+      />
     </Stack>
   );
 }

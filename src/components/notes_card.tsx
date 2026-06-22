@@ -54,16 +54,46 @@ export default function NotesCard({ subject, onPress }: NotesCardProps) {
                     alignItems: "center",
                 }}
             >
-                <Text
+                {/* Left Side: Icon + Title */}
+                <View
                     style={{
+                        flexDirection: "row",
+                        alignItems: "center",
                         flex: 1,
-                        fontSize: 20,
-                        fontFamily: "Outfit-Bold",
-                        color: Colors.primary,
+                        marginRight: 12,
                     }}
                 >
-                    {subject.subjectname}
-                </Text>
+                    {/* Circle Container for Book Icon */}
+                    <View
+                        style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 19,
+                            backgroundColor: "#EEF2FF", // Match the badge tone, or use a light tint of your primary color
+                            justifyContent: "center",
+                            alignItems: "center",
+                            marginRight: 12,
+                        }}
+                    >
+                        <Feather
+                            name="book-open" // alternative: "book"
+                            size={18}
+                            color={Colors.primary}
+                        />
+                    </View>
+
+                    <Text
+                        numberOfLines={1}
+                        style={{
+                            flex: 1,
+                            fontSize: 18, // Slightly reduced from 20 to balance the icon's visual weight
+                            fontFamily: "Outfit-Bold",
+                            color: Colors.primary,
+                        }}
+                    >
+                        {subject.subjectname}
+                    </Text>
+                </View>
 
                 {/* Visibility Badge */}
                 <View
@@ -94,20 +124,6 @@ export default function NotesCard({ subject, onPress }: NotesCardProps) {
                     marginVertical: 14,
                 }}
             />
-
-            {/* Subject Code */}
-            {/* {subject.subjectcode ? (
-                <Text
-                    style={{
-                        fontSize: 13,
-                        color: Colors.primary,
-                        fontFamily: "Outfit-Medium",
-                        marginBottom: 8,
-                    }}
-                >
-                    {subject.subjectcode}
-                </Text>
-            ) : null} */}
 
             {/* Description */}
             <Text
