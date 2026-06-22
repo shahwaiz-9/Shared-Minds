@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
+    Platform,
     SafeAreaView,
     StatusBar,
     StyleSheet,
@@ -15,6 +16,7 @@ import {
     View,
 } from 'react-native';
 
+import { processDocument } from '../ai/documentProcessor';
 import DocumentItem from '../components/document_item';
 import CustomPopup from '../components/popup';
 import {
@@ -24,7 +26,6 @@ import {
     subscribeToDocuments,
     uploadFileToStorage,
 } from '../services/documentService';
-import { processDocument } from '../ai/documentProcessor';
 import { useAuthStore } from '../store';
 import { Colors } from '../utlis/color';
 
@@ -152,6 +153,7 @@ export default function NotesScreen() {
                     typeCategory.toLowerCase(),
                     {
                         documentId: docId,
+                        subjectId,
                         userId: user.uid,
                         source: publicUrl,
                         fileType: typeCategory.toLowerCase(),
@@ -200,6 +202,24 @@ export default function NotesScreen() {
                 fileType: 'text',
                 uploadedBy: user.displayName || user.email || 'Author',
             });
+
+            try {
+                setActionMessage(`Processing embeddings for ${title}...`);
+                await processDocument(
+                    { type: 'remote', url: publicUrl },
+                    'text',
+                    {
+                        documentId: docId,
+                        subjectId,
+                        userId: user.uid,
+                        source: publicUrl,
+                        fileType: 'text',
+                    }
+                );
+                console.log(`[AI Embeddings] Successfully processed text note ${title}`);
+            } catch (embedError: any) {
+                console.error('[AI Embeddings] Text note embedding generation failed:', embedError);
+            }
 
             setTextNoteOpen(false);
             setTextNoteTitle('');
@@ -317,52 +337,6 @@ export default function NotesScreen() {
                 </View>
             </View>
 
-            {textNoteOpen && (
-                <View style={styles.textNoteContainer}>
-                    <Text style={styles.sectionTitle}>Write a Text Note</Text>
-                    <TextInput
-                        value={textNoteTitle}
-                        onChangeText={setTextNoteTitle}
-                        placeholder="Note title (optional)"
-                        placeholderTextColor={Colors.inputPlaceholder}
-                        style={styles.textNoteTitleInput}
-                    />
-                    <TextInput
-                        value={textNoteContent}
-                        onChangeText={setTextNoteContent}
-                        placeholder="Type your note here..."
-                        placeholderTextColor={Colors.inputPlaceholder}
-                        style={styles.textNoteInput}
-                        multiline
-                        numberOfLines={6}
-                        textAlignVertical="top"
-                    />
-                    <View style={styles.textNoteActions}>
-                        <TouchableOpacity
-                            style={styles.cancelButton}
-                            onPress={() => {
-                                setTextNoteOpen(false);
-                                setTextNoteTitle('');
-                                setTextNoteContent('');
-                            }}
-                        >
-                            <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.saveButton, (!textNoteContent.trim() || textNoteLoading) && styles.saveButtonDisabled]}
-                            onPress={handleSaveTextNote}
-                            disabled={!textNoteContent.trim() || textNoteLoading}
-                        >
-                            {textNoteLoading ? (
-                                <ActivityIndicator size="small" color={Colors.white} />
-                            ) : (
-                                <Text style={styles.saveButtonText}>Save Note</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-
             {/* Document List View */}
             <View style={styles.listSection}>
                 <Text style={styles.sectionTitle}>Uploaded Materials ({documents.length})</Text>
@@ -403,6 +377,63 @@ export default function NotesScreen() {
                     <View style={styles.overlayCard}>
                         <ActivityIndicator size="large" color={Colors.primary} />
                         <Text style={styles.overlayText}>{actionMessage}</Text>
+                    </View>
+                </View>
+            )}
+
+            {/* Text Note Input Overlay */}
+            {textNoteOpen && (
+                <View style={styles.textNoteOverlay}>
+                    <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => {
+                            setTextNoteOpen(false);
+                            setTextNoteTitle('');
+                            setTextNoteContent('');
+                        }}
+                    />
+                    <View style={styles.textNoteContainer}>
+                        <Text style={styles.sectionTitle}>Write a Text Note</Text>
+                        <TextInput
+                            value={textNoteTitle}
+                            onChangeText={setTextNoteTitle}
+                            placeholder="Note title (optional)"
+                            placeholderTextColor={Colors.inputPlaceholder}
+                            style={styles.textNoteTitleInput}
+                        />
+                        <TextInput
+                            value={textNoteContent}
+                            onChangeText={setTextNoteContent}
+                            placeholder="Type your note here..."
+                            placeholderTextColor={Colors.inputPlaceholder}
+                            style={styles.textNoteInput}
+                            multiline
+                            numberOfLines={6}
+                            textAlignVertical="top"
+                        />
+                        <View style={styles.textNoteActions}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => {
+                                    setTextNoteOpen(false);
+                                    setTextNoteTitle('');
+                                    setTextNoteContent('');
+                                }}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.saveButton, (!textNoteContent.trim() || textNoteLoading) && styles.saveButtonDisabled]}
+                                onPress={handleSaveTextNote}
+                                disabled={!textNoteContent.trim() || textNoteLoading}
+                            >
+                                {textNoteLoading ? (
+                                    <ActivityIndicator size="small" color={Colors.white} />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>Save Note</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             )}
@@ -494,12 +525,28 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
     },
+    textNoteOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(9, 9, 73, 0.4)',
+        justifyContent: 'flex-end',
+        zIndex: 100,
+    },
     textNoteContainer: {
         paddingHorizontal: 20,
         paddingVertical: 20,
-        backgroundColor: Colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+        backgroundColor: Colors.white,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 8,
     },
     textNoteTitleInput: {
         width: '100%',

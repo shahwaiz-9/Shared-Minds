@@ -1,6 +1,7 @@
 import { supabase } from '../../supabase/supabaseClient';
 import { embedQuery } from './embeddings/embeddings_service';
 import { AI_CONFIG } from './config';
+import { queryChunksFromPinecone } from './pinecone/pinecone';
 import { db } from '../firebase/auth/config';
 
 interface RetrievalResult {
@@ -75,7 +76,13 @@ async function vectorSearch(
   matchCount: number = 4
 ): Promise<RetrievalResult[]> {
   try {
-    // Standard Supabase RPC pgvector match query
+    if (AI_CONFIG.pinecone.apiKey && AI_CONFIG.pinecone.hostUrl) {
+      const pineconeResults = await queryChunksFromPinecone(queryEmbedding, subjectId, matchCount);
+      if (pineconeResults.length > 0) {
+        return pineconeResults;
+      }
+    }
+
     const { data, error } = await supabase.rpc('match_document_chunks', {
       query_embedding: queryEmbedding,
       match_threshold: 0.5,

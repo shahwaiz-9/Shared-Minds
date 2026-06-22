@@ -2,11 +2,11 @@ import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import {
   ActivityIndicator,
   Animated,
   FlatList,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -51,7 +51,7 @@ export default function ChatScreen() {
 
   // Animation references
   const spin = useSpinAnimation(isProcessing);
-  const drawerTranslation = useRef(new Animated.Value(300)).current;
+  const drawerTranslation = useRef(new Animated.Value(280)).current;
   const flatListRef = useRef<FlatList<Message>>(null);
 
   // Fetch all chat sessions for this subject
@@ -186,13 +186,16 @@ export default function ChatScreen() {
   };
 
   const toggleDrawer = () => {
-    const toValue = isDrawerOpen ? 300 : 0;
-    setIsDrawerOpen(!isDrawerOpen);
-    Animated.timing(drawerTranslation, {
-      toValue,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
+    setIsDrawerOpen((prevState) => {
+      const newState = !prevState;
+      const toValue = newState ? 0 : 280;
+      Animated.timing(drawerTranslation, {
+        toValue,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      return newState;
+    });
   };
 
   const scrollToBottom = () => {
@@ -243,14 +246,15 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
-      <KeyboardAwareScrollView
-        style={styles.keyboardContainer}
-      >
-        {/* Main Content Area */}
-        <View style={styles.mainContainer}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 20}
+        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
@@ -305,7 +309,7 @@ export default function ChatScreen() {
             </View>
           )}
 
-          {/* Action Bar Input */}
+          {/* Action Bar Input - fixed at bottom */}
           <View style={styles.actionBar}>
             <TextInput
               style={styles.textInput}
@@ -328,58 +332,58 @@ export default function ChatScreen() {
               )}
             </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+
+      {/* Sidebar Drawer Overlay */}
+      {isDrawerOpen && (
+        <TouchableOpacity style={styles.drawerBackdrop} onPress={toggleDrawer} activeOpacity={1} />
+      )}
+
+      <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerTranslation }] }]}>
+        <View style={styles.drawerHeader}>
+          <Text style={styles.drawerTitle}>Conversations</Text>
+          <TouchableOpacity onPress={toggleDrawer}>
+            <Feather name="x" size={20} color={Colors.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Sidebar Drawer Overlay */}
-        {isDrawerOpen && (
-          <TouchableOpacity style={styles.drawerBackdrop} onPress={toggleDrawer} activeOpacity={1} />
-        )}
+        <TouchableOpacity style={styles.newChatButton} onPress={handleCreateNewSession}>
+          <Feather name="plus" size={18} color={Colors.white} />
+          <Text style={styles.newChatButtonText}>New Chat</Text>
+        </TouchableOpacity>
 
-        <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerTranslation }] }]}>
-          <View style={styles.drawerHeader}>
-            <Text style={styles.drawerTitle}>Conversations</Text>
-            <TouchableOpacity onPress={toggleDrawer}>
-              <Feather name="x" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.newChatButton} onPress={handleCreateNewSession}>
-            <Feather name="plus" size={18} color={Colors.white} />
-            <Text style={styles.newChatButtonText}>New Chat</Text>
-          </TouchableOpacity>
-
-          <FlatList
-            data={sessions}
-            keyExtractor={(item) => item.sessionId}
-            renderItem={({ item }) => {
-              const isActive = activeSession?.sessionId === item.sessionId;
-              return (
-                <TouchableOpacity
-                  style={[styles.sessionItem, isActive && styles.sessionItemActive]}
-                  onPress={() => {
-                    setActiveSession(item);
-                    toggleDrawer();
-                  }}
+        <FlatList
+          data={sessions}
+          keyExtractor={(item) => item.sessionId}
+          renderItem={({ item }) => {
+            const isActive = activeSession?.sessionId === item.sessionId;
+            return (
+              <TouchableOpacity
+                style={[styles.sessionItem, isActive && styles.sessionItemActive]}
+                onPress={() => {
+                  setActiveSession(item);
+                  toggleDrawer();
+                }}
+              >
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={16}
+                  color={isActive ? Colors.primary : Colors.textSecondary}
+                />
+                <Text
+                  style={[styles.sessionText, isActive && styles.sessionTextActive]}
+                  numberOfLines={1}
                 >
-                  <Ionicons
-                    name="chatbubble-outline"
-                    size={16}
-                    color={isActive ? Colors.primary : Colors.textSecondary}
-                  />
-                  <Text
-                    style={[styles.sessionText, isActive && styles.sessionTextActive]}
-                    numberOfLines={1}
-                  >
-                    {item.title}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-            contentContainerStyle={styles.drawerList}
-          />
-        </Animated.View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+                  {item.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={styles.drawerList}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -387,12 +391,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  mainContainer: {
-    flex: 1,
   },
   errorContainer: {
     flex: 1,
@@ -420,7 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   header: {
-    marginTop: Platform.OS === 'android' ? 30 : 0,
+    marginTop: Platform.OS === 'android' ? 40 : 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -567,7 +565,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+    marginBottom: 8,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     backgroundColor: Colors.white,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: Colors.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 100,
   },
   drawer: {
@@ -642,16 +642,18 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.border,
     shadowColor: Colors.black,
     shadowOffset: { width: -4, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
   },
   drawerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 20,
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },

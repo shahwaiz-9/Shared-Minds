@@ -1,5 +1,6 @@
 export interface DocumentMetadata extends Record<string, any> {
   documentId: string;
+  subjectId: string;
   userId: string;
   source: string;
   fileType: string;

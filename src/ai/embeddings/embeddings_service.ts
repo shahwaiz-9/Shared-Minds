@@ -20,16 +20,16 @@ function getEmbeddingsInstance(): GoogleGenerativeAIEmbeddings {
   return embeddingsInstance;
 }
 
+
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * Utility helper to retry async operations on rate limits / network blips.
- */
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
-    // If rate limit (RESOURCE_EXHAUSTED or status 429) and retries remain
+
     const isRateLimit =
       error?.status === 429 ||
       error?.message?.toLowerCase().includes('429') ||
@@ -74,9 +74,6 @@ export async function embedDocuments(
   return results;
 }
 
-/**
- * Generates an embedding for a single text query (e.g. for vector similarity search).
- */
 export async function embedQuery(query: string): Promise<number[]> {
   if (!query) {
     throw new Error('Query string cannot be empty.');

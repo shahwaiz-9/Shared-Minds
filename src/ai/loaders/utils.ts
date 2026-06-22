@@ -102,68 +102,68 @@ export async function extractTextViaGemini(
 
 // MARK: HUGGING FACE MODEL
 
-export async function extractTextViaHuggingFace(
-  base64Data: string,
-  mimeType: string,
-  prompt: string = 'Extract all text from this document. Output only the exact text found. Do not summarize, explain, or add comments.'
-): Promise<string> {
-  const apiKey = AI_CONFIG.hfApiKey;
-  if (!apiKey) {
-    throw new Error('Hugging Face API key is not configured. Please set EXPO_PUBLIC_HF_API_KEY.');
-  }
+// export async function extractTextViaHuggingFace(
+//   base64Data: string,
+//   mimeType: string,
+//   prompt: string = 'Extract all text from this document. Output only the exact text found. Do not summarize, explain, or add comments.'
+// ): Promise<string> {
+//   const apiKey = AI_CONFIG.hfApiKey;
+//   if (!apiKey) {
+//     throw new Error('Hugging Face API key is not configured. Please set EXPO_PUBLIC_HF_API_KEY.');
+//   }
 
-  // Hugging Face standard serverless chat completion URL
-  const url = `https://api-inference.huggingface.co/models/${AI_CONFIG.extraction.hfModel}/v1/chat/completions`;
+//   // Hugging Face standard serverless chat completion URL
+//   const url = `https://api-inference.huggingface.co/models/${AI_CONFIG.extraction.hfModel}/v1/chat/completions`;
 
-  // Format the base64 string into a standard Data URL layout
-  const dataUrl = `data:${mimeType};base64,${base64Data}`;
+//   // Format the base64 string into a standard Data URL layout
+//   const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt,
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: dataUrl,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 1024,
-      }),
-    });
+//   try {
+//     const response = await fetch(url, {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Bearer ${apiKey}`,
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         messages: [
+//           {
+//             role: 'user',
+//             content: [
+//               {
+//                 type: 'text',
+//                 text: prompt,
+//               },
+//               {
+//                 type: 'image_url',
+//                 image_url: {
+//                   url: dataUrl,
+//                 },
+//               },
+//             ],
+//           },
+//         ],
+//         max_tokens: 1024,
+//       }),
+//     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        `Hugging Face API failed: ${response.statusText} (${JSON.stringify(errorData)})`
-      );
-    }
+//     if (!response.ok) {
+//       const errorData = await response.json().catch(() => ({}));
+//       throw new Error(
+//         `Hugging Face API failed: ${response.statusText} (${JSON.stringify(errorData)})`
+//       );
+//     }
 
-    const result = await response.json();
-    const extractedText = result?.choices?.[0]?.message?.content;
+//     const result = await response.json();
+//     const extractedText = result?.choices?.[0]?.message?.content;
 
-    if (!extractedText) {
-      throw new Error('Hugging Face returned an empty response.');
-    }
+//     if (!extractedText) {
+//       throw new Error('Hugging Face returned an empty response.');
+//     }
 
-    return extractedText.trim();
-  } catch (error: any) {
-    console.error('Error calling Hugging Face API for extraction:', error);
-    throw new Error(`Hugging Face extraction failed: ${error.message || error}`);
-  }
-}
+//     return extractedText.trim();
+//   } catch (error: any) {
+//     console.error('Error calling Hugging Face API for extraction:', error);
+//     throw new Error(`Hugging Face extraction failed: ${error.message || error}`);
+//   }
+// }

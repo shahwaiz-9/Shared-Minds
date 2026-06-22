@@ -33,17 +33,17 @@ export const uploadFileToStorage = async (
         const blob: Blob =
             typeof fileUri === 'string'
                 ? await new Promise<Blob>((resolve, reject) => {
-                      const xhr = new XMLHttpRequest();
-                      xhr.onload = function () {
-                          resolve(xhr.response);
-                      };
-                      xhr.onerror = function () {
-                          reject(new TypeError('Network request failed'));
-                      };
-                      xhr.responseType = 'blob';
-                      xhr.open('GET', fileUri, true);
-                      xhr.send(null);
-                  })
+                    const xhr = new XMLHttpRequest();
+                    xhr.onload = function () {
+                        resolve(xhr.response);
+                    };
+                    xhr.onerror = function () {
+                        reject(new TypeError('Network request failed'));
+                    };
+                    xhr.responseType = 'blob';
+                    xhr.open('GET', fileUri, true);
+                    xhr.send(null);
+                })
                 : fileUri;
 
         const cleanFileName = fileName.replace(/[^a-zA-Z0-9.]/g, '_');

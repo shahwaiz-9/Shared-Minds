@@ -2,6 +2,7 @@ import { DocumentSource, DocumentMetadata, ProcessingOptions, ProcessingResult, 
 import { extractText } from './loaders/loader';
 import { chunkText } from './chunker';
 import { embedDocuments } from './embeddings/embeddings_service';
+import { saveChunksToPinecone } from './pinecone/pinecone';
 
 
 export async function processDocument(
@@ -41,6 +42,13 @@ export async function processDocument(
       embedding: embeddings[index] || [],
       metadata: chunk.metadata as DocumentMetadata,
     }));
+
+    try {
+      await saveChunksToPinecone(metadata.subjectId, metadata.documentId, processedChunks);
+      console.log(`[AI Pipeline] Stored ${processedChunks.length} chunks in Pinecone for subject ${metadata.subjectId}.`);
+    } catch (pineconeError: any) {
+      console.warn('[AI Pipeline] Pinecone storage failed:', pineconeError);
+    }
 
     return {
       chunks: processedChunks,
