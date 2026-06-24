@@ -9,8 +9,9 @@ export const AI_CONFIG = {
   },
 
   embeddings: {
-    modelName: 'text-embedding-004',
+    modelName: 'gemini-embedding-001',
     batchSize: 50,
+    expectedDimension: 3072,
   },
   chunking: {
     chunkSize: 1000,
@@ -18,6 +19,6 @@ export const AI_CONFIG = {
   },
   extraction: {
     geminiModel: 'gemini-3.1-flash-lite',
-    hfModel: 'Qwen/Qwen2.5-VL-7B-Instruct',
+    hfModel: 'meta-llama/Llama-3.2-11B-Vision-Instruct',
   },
 };

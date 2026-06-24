@@ -145,7 +145,7 @@ export default function ChatScreen() {
       // 2. Prepare Gemini history formatting
       const historyFormatted = messages.map((m) => ({
         role: m.senderType === 'user' ? ('user' as const) : ('model' as const),
-        parts: [m.message],
+        parts: [{ text: m.message }],
       }));
 
       // 3. Trigger RAG + Gemini generation

@@ -14,7 +14,7 @@ function TabIcon({
 }: {
     name: IoniconsName;
     nameFilled: IoniconsName;
-    color: string;
+    color: React.ComponentProps<typeof Ionicons>['color'];
     size: number;
     focused: boolean;
 }) {

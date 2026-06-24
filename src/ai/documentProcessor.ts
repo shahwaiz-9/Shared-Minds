@@ -1,8 +1,8 @@
-import { DocumentSource, DocumentMetadata, ProcessingOptions, ProcessingResult, ProcessedChunk } from './types';
-import { extractText } from './loaders/loader';
 import { chunkText } from './chunker';
 import { embedDocuments } from './embeddings/embeddings_service';
+import { extractText } from './loaders/loader';
 import { saveChunksToPinecone } from './pinecone/pinecone';
+import { DocumentMetadata, DocumentSource, ProcessedChunk, ProcessingOptions, ProcessingResult } from './types';
 
 
 export async function processDocument(
@@ -34,6 +34,7 @@ export async function processDocument(
     const embeddingStart = Date.now();
     const embeddings = await embedDocuments(documentChunks, options?.batchSize);
     const embeddingTimeMs = Date.now() - embeddingStart;
+    console.log("[AI Pipeline] Embeddings dimenstions:", embeddings[0]?.length || 0);
     console.log(`[AI Pipeline] Embeddings generation complete in ${embeddingTimeMs}ms.`);
 
     // 4. Combine into final type-safe structure

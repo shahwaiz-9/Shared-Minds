@@ -1,5 +1,6 @@
+import { useAuthStore } from '@/store';
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
@@ -28,6 +29,26 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  const router = useRouter();
+  const { isAuthenticated, initializeAuth, loading } = useAuthStore();
+
+  useEffect(() => {
+    // initialize firebase auth listener
+    const unsub = initializeAuth();
+    return unsub;
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    // when auth state is known, route accordingly
+    if (!loading) {
+      if (isAuthenticated) {
+        router.replace('/application/home');
+      } else {
+        router.replace('/auth/login');
+      }
+    }
+  }, [isAuthenticated, loading]);
 
   if (!fontsLoaded) {
     return null;

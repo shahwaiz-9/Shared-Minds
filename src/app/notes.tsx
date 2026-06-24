@@ -153,7 +153,7 @@ export default function NotesScreen() {
                     typeCategory.toLowerCase(),
                     {
                         documentId: docId,
-                        subjectId,
+                        subjectId: subjectid,
                         userId: user.uid,
                         source: publicUrl,
                         fileType: typeCategory.toLowerCase(),
@@ -196,7 +196,7 @@ export default function NotesScreen() {
             const textBlob = new Blob([textNoteContent], { type: 'text/plain' });
             const publicUrl = await uploadFileToStorage(subjectid, textBlob, fileName, 'text/plain');
 
-            await addDocumentToFirestore(subjectid, {
+            const docId = await addDocumentToFirestore(subjectid, {
                 fileName,
                 fileUrl: publicUrl,
                 fileType: 'text',
@@ -210,7 +210,7 @@ export default function NotesScreen() {
                     'text',
                     {
                         documentId: docId,
-                        subjectId,
+                        subjectId: subjectid,
                         userId: user.uid,
                         source: publicUrl,
                         fileType: 'text',

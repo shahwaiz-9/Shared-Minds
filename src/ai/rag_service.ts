@@ -1,18 +1,14 @@
 import { supabase } from '../../supabase/supabaseClient';
-import { embedQuery } from './embeddings/embeddings_service';
-import { AI_CONFIG } from './config';
-import { queryChunksFromPinecone } from './pinecone/pinecone';
 import { db } from '../firebase/auth/config';
+import { AI_CONFIG } from './config';
+import { embedQuery } from './embeddings/embeddings_service';
+import { queryChunksFromPinecone } from './pinecone/pinecone';
 
 interface RetrievalResult {
   text: string;
   source: string;
 }
 
-/**
- * Perform a keyword-based fallback search from subject documents in Firestore
- * if the vector search fails or table is not created.
- */
 async function fallbackKeywordSearch(query: string, subjectId: string): Promise<RetrievalResult[]> {
   try {
     const snapshot = await db
@@ -24,7 +20,7 @@ async function fallbackKeywordSearch(query: string, subjectId: string): Promise<
     const docs = snapshot.docs.map((d) => d.data());
     const matchedChunks: RetrievalResult[] = [];
 
-    // Quick keyword matching search across all documents
+
     for (const doc of docs) {
       if (!doc.fileUrl) continue;
       try {
@@ -112,13 +108,14 @@ async function vectorSearch(
 export async function getRAGResponse(
   query: string,
   subjectId: string,
-  chatHistory: { role: 'user' | 'model'; parts: string[] }[] = []
+  chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
 ): Promise<string> {
   let contextChunks: RetrievalResult[] = [];
 
   try {
     // 1. Get embedding representation of query
     const queryEmbedding = await embedQuery(query);
+    console.log('Query embedding generated successfully. Proceeding to vector search for relevant document chunks.');
 
     // 2. Query vector store
     contextChunks = await vectorSearch(queryEmbedding, subjectId);
@@ -153,7 +150,7 @@ ${contextText || 'No context files uploaded yet for this subject.'}
     throw new Error('Gemini API key is not configured.');
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
   const contentsArray = [
     ...chatHistory,

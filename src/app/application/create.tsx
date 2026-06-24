@@ -241,7 +241,7 @@ export default function CreateScreen() {
                     <View style={{ marginBottom: 20 }}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                             <Text style={{ fontSize: 15, fontWeight: "600", fontFamily: "Outfit-Medium", color: Colors.textPrimary, marginBottom: 8 }}>Description</Text>
-                            <Text style={{ fontSize: 12, fontFamily: "Outfit-Regular", color: description.length > 200 ? Colors.error : Colors.textTertiary, fontWeight: description.length > 200 ? "600" : "450" }}>
+                            <Text style={{ fontSize: 12, fontFamily: 'Outfit-Regular', color: description.length > 200 ? Colors.error : Colors.textTertiary, fontWeight: description.length > 200 ? "600" : "500" }}>
                                 {description.length}/200
                             </Text>
                         </View>

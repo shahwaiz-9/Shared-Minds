@@ -1,4 +1,5 @@
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { cacheDirectory, downloadAsync, readAsStringAsync } from 'expo-file-system/legacy';
+import { convert } from 'react-native-pdf-to-image';
 import { AI_CONFIG } from '../config';
 import { DocumentSource } from '../types';
 
@@ -39,16 +40,15 @@ export async function getBase64FromSource(source: DocumentSource): Promise<strin
   }
 }
 
-// MARK: GEMINI MODEL 
 
+// MARK: GEMINI MODEL 
 export async function extractTextViaGemini(
   base64Data: string,
   mimeType: string,
-  prompt: string = 'Extract all text from this document. Output only the exact text found. Do not summarize, explain, or add comments.'
+  prompt: string = 'Extract all text from this document. Output only the exact text found. Do not summarize or explain.'
 ): Promise<string> {
-
   const apiKey = AI_CONFIG.geminiApiKey;
-  console.log(apiKey)
+  console.log('[Gemini Extraction] API Key configured:', !!apiKey);
   if (!apiKey) {
     throw new Error('Gemini API key is not configured. Please set GEMINI_API_KEY.');
   }
@@ -56,6 +56,7 @@ export async function extractTextViaGemini(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_CONFIG.extraction.geminiModel}:generateContent?key=${apiKey}`;
 
   try {
+    console.log('[Gemini Extraction] Sending request');
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -79,10 +80,15 @@ export async function extractTextViaGemini(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        `Gemini API request failed: ${response.statusText} (${JSON.stringify(errorData)})`
-      );
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { raw: errorText };
+      }
+      console.error('[Gemini Extraction] Error response:', JSON.stringify(errorData));
+      throw new Error(`Gemini API failed: ${response.status} ${response.statusText} (${JSON.stringify(errorData)})`);
     }
 
     const result = await response.json();
@@ -98,72 +104,3 @@ export async function extractTextViaGemini(
     throw new Error(`Gemini extraction failed: ${error.message || error}`);
   }
 }
-
-
-// MARK: HUGGING FACE MODEL
-
-// export async function extractTextViaHuggingFace(
-//   base64Data: string,
-//   mimeType: string,
-//   prompt: string = 'Extract all text from this document. Output only the exact text found. Do not summarize, explain, or add comments.'
-// ): Promise<string> {
-//   const apiKey = AI_CONFIG.hfApiKey;
-//   if (!apiKey) {
-//     throw new Error('Hugging Face API key is not configured. Please set EXPO_PUBLIC_HF_API_KEY.');
-//   }
-
-//   // Hugging Face standard serverless chat completion URL
-//   const url = `https://api-inference.huggingface.co/models/${AI_CONFIG.extraction.hfModel}/v1/chat/completions`;
-
-//   // Format the base64 string into a standard Data URL layout
-//   const dataUrl = `data:${mimeType};base64,${base64Data}`;
-
-//   try {
-//     const response = await fetch(url, {
-//       method: 'POST',
-//       headers: {
-//         'Authorization': `Bearer ${apiKey}`,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         messages: [
-//           {
-//             role: 'user',
-//             content: [
-//               {
-//                 type: 'text',
-//                 text: prompt,
-//               },
-//               {
-//                 type: 'image_url',
-//                 image_url: {
-//                   url: dataUrl,
-//                 },
-//               },
-//             ],
-//           },
-//         ],
-//         max_tokens: 1024,
-//       }),
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json().catch(() => ({}));
-//       throw new Error(
-//         `Hugging Face API failed: ${response.statusText} (${JSON.stringify(errorData)})`
-//       );
-//     }
-
-//     const result = await response.json();
-//     const extractedText = result?.choices?.[0]?.message?.content;
-
-//     if (!extractedText) {
-//       throw new Error('Hugging Face returned an empty response.');
-//     }
-
-//     return extractedText.trim();
-//   } catch (error: any) {
-//     console.error('Error calling Hugging Face API for extraction:', error);
-//     throw new Error(`Hugging Face extraction failed: ${error.message || error}`);
-//   }
-// }

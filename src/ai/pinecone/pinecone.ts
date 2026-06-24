@@ -8,18 +8,25 @@ export async function saveChunksToPinecone(subjectId: string, documentId: string
     }
     const url = `${hostUrl}/vectors/upsert`;
 
-    const vectors = pipelineOutputChunks.map((chunk, index) => ({
-        id: `${subjectId}_${documentId}_chunk_${index}`,
-        values: chunk.embedding,
-        metadata: {
-            subjectId,
-            documentId,
-            chunkIndex: index,
-            text: chunk.text,
-            fileType: chunk.metadata?.fileType,
-            source: chunk.metadata?.source,
-        },
-    }));
+    const expectedDimension = AI_CONFIG.embeddings.expectedDimension;
+    const vectors = pipelineOutputChunks.map((chunk, index) => {
+        if (expectedDimension && chunk.embedding.length !== expectedDimension) {
+            throw new Error(`Embedding dimension mismatch for chunk ${index}: got ${chunk.embedding.length}, expected ${expectedDimension}.`);
+        }
+
+        return {
+            id: `${subjectId}_${documentId}_chunk_${index}`,
+            values: chunk.embedding,
+            metadata: {
+                subjectId,
+                documentId,
+                chunkIndex: index,
+                text: chunk.text,
+                fileType: chunk.metadata?.fileType,
+                source: chunk.metadata?.source,
+            },
+        };
+    });
 
     try {
         const response = await fetch(url, {
@@ -68,7 +75,7 @@ export async function queryChunksFromPinecone(
                 includeMetadata: true,
                 includeValues: false,
                 vector: queryEmbedding,
-                filter: { subjectId },
+                filter: { subjectId: { $eq: subjectId } },
             }),
         });
 
