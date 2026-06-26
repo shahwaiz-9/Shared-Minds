@@ -1,10 +1,13 @@
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import auth from '@react-native-firebase/auth';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
+  Clipboard,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -66,22 +69,33 @@ export default function ChatScreen() {
     loadMessages(activeSession.sessionId);
   }, [activeSession]);
 
-  const loadSessions = async (selectLatest = true) => {
+  const loadSessions = async () => {
     if (!subjectid) return;
     setLoading(true);
     try {
       const fetchedSessions = await fetchChatSessions(subjectid);
-      setSessions(fetchedSessions);
-
+      
       if (fetchedSessions.length > 0) {
-        if (selectLatest) {
-          setActiveSession(fetchedSessions[0]);
+        const latestSession = fetchedSessions[0];
+        // Fetch messages for the latest session to see if it is empty
+        const latestMessages = await fetchMessages(subjectid, latestSession.sessionId);
+        
+        if (latestMessages.length > 0) {
+          // Latest session has messages, create a brand-new session
+          const title = `Chat Session ${fetchedSessions.length + 1}`;
+          const newSession = await createNewSession(subjectid, title);
+          setSessions([newSession, ...fetchedSessions]);
+          setActiveSession(newSession);
+        } else {
+          // Latest session is empty, reuse it
+          setSessions(fetchedSessions);
+          setActiveSession(latestSession);
         }
       } else {
-        // Automatically create a first chat session if empty
-        const defaultSession = await createNewSession(subjectid, 'First Discussion');
-        setSessions([defaultSession]);
-        setActiveSession(defaultSession);
+        // No sessions exist at all, create the first session
+        const newSession = await createNewSession(subjectid, 'First Discussion');
+        setSessions([newSession]);
+        setActiveSession(newSession);
       }
     } catch (err) {
       console.error('Error loading sessions:', err);
@@ -138,6 +152,9 @@ export default function ChatScreen() {
     setMessages((prev) => [...prev, tempUserMsg]);
     setTimeout(scrollToBottom, 50);
 
+    console.log("Cuurent User: ", auth().currentUser?.uid, " | User from store: ", user.uid);
+
+
     try {
       // 1. Save user message in Firestore
       await saveMessage(subjectid, activeSession.sessionId, userMessage);
@@ -158,6 +175,8 @@ export default function ChatScreen() {
         message: replyText,
       };
       const responseId = await saveMessage(subjectid, activeSession.sessionId, assistantMessage);
+
+      console.log("Ai Response: ", assistantMessage.message, " | Response ID: ", responseId);
 
       // Add to state
       const tempAiMsg: Message = {
@@ -204,6 +223,157 @@ export default function ChatScreen() {
     }
   };
 
+  // Function to copy text to clipboard with feedback
+  const handleCopyMessage = (text: string) => {
+    Clipboard.setString(text);
+    Alert.alert('Copied to Clipboard', 'The message text has been copied.');
+  };
+
+  // Helper to parse logs and metadata out of AI responses, and format markdown structures
+  const renderFormattedMessage = (rawText: string, isUser: boolean) => {
+    if (isUser) {
+      return (
+        <Text style={[styles.messageText, styles.userText]}>
+          {rawText}
+        </Text>
+      );
+    }
+
+    // Step 1: Clean Logs and trailing Metadata
+    let cleaned = rawText;
+    // Strip prefixes like "LOG Ai Response:" (case-insensitive, optionally with spaces/colons)
+    cleaned = cleaned.replace(/^LOG\s+Ai\s+Response:\s*/i, '');
+    // Strip trailing metadata like "| Response ID: ..."
+    cleaned = cleaned.replace(/\|\s*Response\s*ID:\s*\S+\s*$/i, '');
+    cleaned = cleaned.trim();
+
+    // Step 2: Parse and render table elements and inline formatting natively in UI
+    // Detect markdown tables: lines starting and ending with |
+    const lines = cleaned.split('\n');
+    const elements: React.ReactNode[] = [];
+    let currentTableRows: string[][] = [];
+    let isTableActive = false;
+
+    // Helper to render bold text matches
+    const renderBoldAndNormalText = (text: string, textStyle: any) => {
+      const parts = text.split(/(\*\*.*?\*\*)/g);
+      return parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return (
+            <Text key={index} style={[textStyle, { fontFamily: 'Outfit-Bold' }]}>
+              {part.slice(2, -2)}
+            </Text>
+          );
+        }
+        return <Text key={index} style={textStyle}>{part}</Text>;
+      });
+    };
+
+    lines.forEach((line, lineIndex) => {
+      const trimmedLine = line.trim();
+      const isTableRow = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
+
+      if (isTableRow) {
+        // Skip separator lines e.g. |:---| or |---|
+        const isSeparator = trimmedLine.replace(/[\s|:-]/g, '').length === 0;
+        if (!isSeparator) {
+          const cells = trimmedLine
+            .split('|')
+            .map(c => c.trim())
+            .filter((_, i, arr) => i > 0 && i < arr.length - 1); // remove empty outer split elements
+          currentTableRows.push(cells);
+        }
+        isTableActive = true;
+      } else {
+        // If table was active, render the collected table before processing this text line
+        if (isTableActive && currentTableRows.length > 0) {
+          elements.push(
+            <View key={`table-${lineIndex}`} style={{ marginVertical: 8, borderWidth: 1, borderColor: Colors.border, borderRadius: 8, overflow: 'hidden' }}>
+              {currentTableRows.map((row, rIndex) => (
+                <View
+                  key={rIndex}
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: rIndex === 0 ? '#EEF2FF' : Colors.white,
+                    borderBottomWidth: rIndex === currentTableRows.length - 1 ? 0 : 1,
+                    borderBottomColor: Colors.border,
+                    paddingVertical: 8,
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  {row.map((cell, cIndex) => (
+                    <Text
+                      key={cIndex}
+                      style={{
+                        flex: 1,
+                        fontSize: 12,
+                        fontFamily: rIndex === 0 ? 'Outfit-Bold' : 'Outfit-Regular',
+                        color: Colors.textPrimary,
+                        textAlign: 'center',
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      {cell}
+                    </Text>
+                  ))}
+                </View>
+              ))}
+            </View>
+          );
+          currentTableRows = [];
+          isTableActive = false;
+        }
+
+        if (trimmedLine.length > 0) {
+          elements.push(
+            <Text key={`text-${lineIndex}`} style={{ marginVertical: 2 }}>
+              {renderBoldAndNormalText(line, [styles.messageText, styles.aiText])}
+            </Text>
+          );
+        }
+      }
+    });
+
+    // Render any remaining table at the end
+    if (currentTableRows.length > 0) {
+      elements.push(
+        <View key={`table-end`} style={{ marginVertical: 8, borderWidth: 1, borderColor: Colors.border, borderRadius: 8, overflow: 'hidden' }}>
+          {currentTableRows.map((row, rIndex) => (
+            <View
+              key={rIndex}
+              style={{
+                flexDirection: 'row',
+                backgroundColor: rIndex === 0 ? '#EEF2FF' : Colors.white,
+                borderBottomWidth: rIndex === currentTableRows.length - 1 ? 0 : 1,
+                borderBottomColor: Colors.border,
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+              }}
+            >
+              {row.map((cell, cIndex) => (
+                <Text
+                  key={cIndex}
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontFamily: rIndex === 0 ? 'Outfit-Bold' : 'Outfit-Regular',
+                    color: Colors.textPrimary,
+                    textAlign: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  {cell}
+                </Text>
+              ))}
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return <View>{elements}</View>;
+  };
+
   const renderMessageItem = ({ item }: { item: Message }) => {
     const isUser = item.senderType === 'user';
     const isSystemError = item.senderId === 'system';
@@ -215,20 +385,20 @@ export default function ChatScreen() {
             <Ionicons name="sparkles" size={14} color={Colors.white} />
           </View>
         )}
-        <View
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onLongPress={() => handleCopyMessage(item.message)}
           style={[
             styles.messageBubble,
             isUser ? styles.userBubble : styles.aiBubble,
             isSystemError && styles.errorBubble,
           ]}
         >
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
-            {item.message}
-          </Text>
+          {renderFormattedMessage(item.message, isUser)}
           <Text style={[styles.timeText, isUser ? styles.userTime : styles.aiTime]}>
             {item.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };

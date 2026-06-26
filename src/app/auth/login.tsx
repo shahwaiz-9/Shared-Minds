@@ -30,6 +30,14 @@ export default function login() {
     const setUser = useAuthStore((state) => state.setUser);
     const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
     const fetchSubjects = useAuthStore((state) => state.fetchSubjects);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const authLoading = useAuthStore((state) => state.loading);
+
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            router.replace('/application/home');
+        }
+    }, [authLoading, isAuthenticated, router]);
 
     const updateAuthState = async (firebaseUser: any, firestoreUser: any | null) => {
         const user: User = {
@@ -95,8 +103,15 @@ export default function login() {
     };
 
     const handleLogin = async () => {
-        if (!email.trim() || !password.trim()) {
-            setPopupMessage('Please fill in all fields.');
+        if (!email.trim()) {
+            setPopupMessage('Please enter your email address.');
+            setPopupType('error');
+            setShowPopup(true);
+            return;
+        }
+
+        if (!password.trim()) {
+            setPopupMessage('Please enter your password.');
             setPopupType('error');
             setShowPopup(true);
             return;
@@ -106,15 +121,10 @@ export default function login() {
 
         try {
             const result = await firebaseLogin(email.trim(), password);
-            console.log("Auth results: ", result.user)
+            console.log("Auth results: ", result.user);
             const userDoc = await getUserDocument(result.user.uid);
-            updateAuthState(result.user, userDoc);
-
-            if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
-                router.replace('/application/home' as any);
-            } else {
-                router.replace('/auth/profilesetup' as any);
-            }
+            await updateAuthState(result.user, userDoc);
+            router.replace('/application/home');
         } catch (error: any) {
             console.error('Login error:', error);
             let msg = 'An error occurred during sign in.';
@@ -146,12 +156,8 @@ export default function login() {
         try {
             const firebaseUser = await LoginWithGoogle(idToken);
             const userDoc = await getUserDocument(firebaseUser.uid);
-            updateAuthState(firebaseUser, userDoc);
-            if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
-                router.replace('/application/home' as any);
-            } else {
-                router.replace('/auth/profilesetup' as any);
-            }
+            await updateAuthState(firebaseUser, userDoc);
+            router.replace('/application/home');
         } catch (e: any) {
             console.error('Google Native Login Error:', e);
             setPopupMessage(e?.message || 'Google Native Login failed.');
@@ -189,12 +195,8 @@ export default function login() {
             if (data.access_token) {
                 const firebaseUser = await LoginWithGithub(data.access_token);
                 const userDoc = await getUserDocument(firebaseUser.uid);
-                updateAuthState(firebaseUser, userDoc);
-                if (userDoc && (userDoc.photoURL || userDoc.coverPhotoURL || userDoc.bio)) {
-                    router.replace('/application/home' as any);
-                } else {
-                    router.replace('/auth/profilesetup' as any);
-                }
+                await updateAuthState(firebaseUser, userDoc);
+                router.replace('/application/home');
             } else {
                 throw new Error(data.error_description || 'Failed to exchange GitHub access token.');
             }

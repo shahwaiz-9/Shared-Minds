@@ -40,7 +40,6 @@ export default function RootLayout() {
   }, [initializeAuth]);
 
   useEffect(() => {
-    // when auth state is known, route accordingly
     if (!loading) {
       if (isAuthenticated) {
         router.replace('/application/home');
@@ -48,9 +47,9 @@ export default function RootLayout() {
         router.replace('/auth/login');
       }
     }
-  }, [isAuthenticated, loading]);
+  }, [loading, router]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || loading) {
     return null;
   }
 

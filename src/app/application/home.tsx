@@ -1,37 +1,53 @@
-import { extractTextViaHuggingFace, listHFModels } from '@/ai/loaders/utils';
 import { logout } from '@/firebase/auth/auth';
 import { useAuthStore } from '@/store';
 import Feather from '@expo/vector-icons/Feather';
+import auth from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import NotesCard from '../../components/notes_card';
 import { Colors } from '../../utlis/color';
-export default function HomeScreen() {
-    const router = useRouter();
-    const { user, subjects, loading, fetchSubjects } = useAuthStore();
-    const [hfTestResult, setHfTestResult] = useState<string | null>(null);
+
+function useFirebaseAuthUser() {
+    const [currentUser, setCurrentUser] = useState(auth().currentUser);
 
     useEffect(() => {
-        let mounted = true;
-        async function runHfTest() {
-            try {
-                console.log('[HF Test] Listing models...');
-                await listHFModels();
-
-                console.log('[HF Test] Sending test message via HF extraction');
-                const response = await extractTextViaHuggingFace('', 'image/png', 'How are you ?');
-                console.log('[HF Test] Response:', response);
-                if (mounted) setHfTestResult(response || 'No response');
-            } catch (e: any) {
-                console.error('[HF Test] Error:', e);
-                if (mounted) setHfTestResult(`Error: ${e.message || e}`);
-            }
-        }
-
-        runHfTest();
-        return () => { mounted = false; };
+        const unsubscribe = auth().onAuthStateChanged((user) => {
+            console.log('[Firebase Auth] Auth state changed. Current user:', user?.uid || 'null');
+            setCurrentUser(user);
+        });
+        return unsubscribe;
     }, []);
+
+    return currentUser;
+}
+
+export default function HomeScreen() {
+    const router = useRouter();
+    const firebaseUser = useFirebaseAuthUser();
+    const { subjects, loading, fetchSubjects } = useAuthStore();
+    const [hfTestResult, setHfTestResult] = useState<string | null>(null);
+
+    // useEffect(() => {
+    //     let mounted = true;
+    //     async function runHfTest() {
+    //         try {
+    //             console.log('[HF Test] Listing models...');
+    //             await listHFModels();
+
+    //             console.log('[HF Test] Sending test message via HF extraction');
+    //             const response = await extractTextViaHuggingFace('', 'image/png', 'How are you ?');
+    //             console.log('[HF Test] Response:', response);
+    //             if (mounted) setHfTestResult(response || 'No response');
+    //         } catch (e: any) {
+    //             console.error('[HF Test] Error:', e);
+    //             if (mounted) setHfTestResult(`Error: ${e.message || e}`);
+    //         }
+    //     }
+
+    //     runHfTest();
+    //     return () => { mounted = false; };
+    // }, []);
 
     if (loading) {
         return (
