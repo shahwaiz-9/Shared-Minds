@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Clipboard,
   FlatList,
@@ -21,8 +20,6 @@ import {
 } from 'react-native';
 
 import {
-  ChatSession,
-  Message,
   createNewSession,
   fetchChatSessions,
   fetchMessages,
@@ -30,6 +27,7 @@ import {
 } from '../ai/chat_service';
 import { useSpinAnimation } from '../ai/hooks/useSpinAnimation';
 import { getRAGResponse } from '../ai/rag_service';
+import { ChatSession, Message } from '../interface/chat';
 import { useAuthStore } from '../store';
 import { Colors } from '../utlis/color';
 
@@ -74,12 +72,12 @@ export default function ChatScreen() {
     setLoading(true);
     try {
       const fetchedSessions = await fetchChatSessions(subjectid);
-      
+
       if (fetchedSessions.length > 0) {
         const latestSession = fetchedSessions[0];
         // Fetch messages for the latest session to see if it is empty
         const latestMessages = await fetchMessages(subjectid, latestSession.sessionId);
-        
+
         if (latestMessages.length > 0) {
           // Latest session has messages, create a brand-new session
           const title = `Chat Session ${fetchedSessions.length + 1}`;
@@ -226,7 +224,6 @@ export default function ChatScreen() {
   // Function to copy text to clipboard with feedback
   const handleCopyMessage = (text: string) => {
     Clipboard.setString(text);
-    Alert.alert('Copied to Clipboard', 'The message text has been copied.');
   };
 
   // Helper to parse logs and metadata out of AI responses, and format markdown structures

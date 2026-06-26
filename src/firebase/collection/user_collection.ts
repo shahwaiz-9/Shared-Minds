@@ -2,10 +2,7 @@ import { User } from '@/interface/user';
 import firestore from '@react-native-firebase/firestore';
 import { db } from '../auth/config';
 
-/**
- * Fetches a user document from Firestore by UID.
- * Converts Firestore Timestamps to standard JavaScript Date objects.
- */
+
 export const getUserDocument = async (uid: string): Promise<User | null> => {
     try {
         const docSnap = await db.collection('users').doc(uid).get();
@@ -29,9 +26,7 @@ export const getUserDocument = async (uid: string): Promise<User | null> => {
     }
 };
 
-/**
- * Creates or overwrites a user document in Firestore.
- */
+
 export const createUserDocument = async (user: User): Promise<void> => {
     try {
         await db.collection('users').doc(user.uid).set({
@@ -50,9 +45,7 @@ export const createUserDocument = async (user: User): Promise<void> => {
     }
 };
 
-/**
- * Updates an existing user document in Firestore.
- */
+
 export const updateUserDocument = async (uid: string, data: Partial<User>): Promise<void> => {
     try {
         const updateData: any = { ...data };
@@ -71,3 +64,9 @@ export const updateUserDocument = async (uid: string, data: Partial<User>): Prom
         throw error;
     }
 };
+
+
+
+
+// Public subjects handling moved to subject_collection.ts
+

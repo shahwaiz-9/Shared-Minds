@@ -1,5 +1,5 @@
+import { getSubjectDocuments } from '@/firebase/collection/document_collection';
 import { supabase } from '../../supabase/supabaseClient';
-import { db } from '../firebase/auth/config';
 import { AI_CONFIG } from './config';
 import { embedQuery } from './embeddings/embeddings_service';
 import { queryChunksFromPinecone } from './pinecone/pinecone';
@@ -11,20 +11,14 @@ interface RetrievalResult {
 
 async function fallbackKeywordSearch(query: string, subjectId: string): Promise<RetrievalResult[]> {
   try {
-    const snapshot = await db
-      .collection('subjects')
-      .doc(subjectId)
-      .collection('documents')
-      .get();
-
-    const docs = snapshot.docs.map((d) => d.data());
+    const docs = await getSubjectDocuments(subjectId);
     const matchedChunks: RetrievalResult[] = [];
 
 
     for (const doc of docs) {
-      if (!doc.fileUrl) continue;
+      if (!doc.fileurl && !doc.fileurl) continue;
       try {
-        const fileRes = await fetch(doc.fileUrl);
+        const fileRes = await fetch(doc.fileurl || doc.fileUrl);
         if (!fileRes.ok) continue;
         const fileText = await fileRes.text();
 
@@ -47,7 +41,7 @@ async function fallbackKeywordSearch(query: string, subjectId: string): Promise<
           if (score > 0) {
             matchedChunks.push({
               text: cleanParagraph,
-              source: doc.fileName || 'Subject Document',
+              source: doc.filename || doc.fileName || 'Subject Document',
             });
           }
         }

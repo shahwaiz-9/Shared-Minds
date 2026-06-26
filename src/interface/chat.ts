@@ -22,3 +22,11 @@ export interface Message {
     createdAt: Date;
 
 }
+
+export interface ChatSession {
+    sessionId: string;
+    subjectId: string;
+    title: string;
+    createdAt: Date;
+    updatedAt: Date;
+}

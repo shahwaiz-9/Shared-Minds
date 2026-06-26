@@ -1,8 +1,8 @@
+import { DocumentMetadata, DocumentSource, ProcessedChunk, ProcessingOptions, ProcessingResult } from '@/interface/document';
 import { chunkText } from './chunker';
 import { embedDocuments } from './embeddings/embeddings_service';
 import { extractText } from './loaders/loader';
 import { saveChunksToPinecone } from './pinecone/pinecone';
-import { DocumentMetadata, DocumentSource, ProcessedChunk, ProcessingOptions, ProcessingResult } from './types';
 
 
 export async function processDocument(

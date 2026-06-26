@@ -130,7 +130,7 @@ export default function ProfileScreen() {
             {/* Main Scrollable Container to prevent nested scrolls */}
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
                 {/* Cover & Profile Photo Section */}
-                <View style={{ width: "100%", height: 220, position: "relative", marginBottom: 50 }}>
+                <View style={{ width: "100%", height: 260, position: "relative", marginBottom: 30 }}>
                     <Image
                         source={{ uri: profileUser.coverPhotoURL || DEFAULT_COVER }}
                         style={{ width: "100%", height: 180 }}
@@ -138,9 +138,9 @@ export default function ProfileScreen() {
                     />
                     <View style={{
                         position: "absolute",
-                        bottom: 0,
+                        bottom: -7, // Pulls the avatar down by exactly half its height (160 / 2)
                         left: "50%",
-                        marginLeft: -80, // Half of avatar width (160/2)
+                        marginLeft: -80, // Centers it horizontally
                         width: 160,
                         height: 160,
                         borderRadius: 80,
@@ -171,6 +171,9 @@ export default function ProfileScreen() {
                         {profileUser.bio || "No bio available yet. Share something about yourself!"}
                     </Text>
                 </View>
+
+
+
 
                 {/* General Stats Grid */}
                 <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignItems: "center", paddingHorizontal: 16, marginBottom: 24 }}>

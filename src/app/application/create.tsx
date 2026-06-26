@@ -145,20 +145,19 @@ export default function CreateScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
             {/* <Header title="Create Subject" /> */}
 
-            <View style={{
-                marginTop: 50,
-                alignItems: 'center'
-            }}>
-                <Text style={{
-                    fontFamily: 'Outfit-Bold',
-                    fontSize: 24,
-                    color: Colors.primary,
-
-                }}>
+            <View
+                style={{
+                    marginTop: 50,
+                    height: 60,
+                    justifyContent: "center",
+                    paddingHorizontal: 24,
+                    borderBottomWidth: 1,
+                    borderColor: "#F1F5F9",
+                }}
+            >
+                <Text style={{ fontSize: 32, fontFamily: "Outfit-Bold", color: Colors.primary }}>
                     Create Subject
-
                 </Text>
-                {/* <View style={{ height: 0.2, width: '90%', backgroundColor: Colors.primary, marginTop: 5 }} /> */}
             </View>
 
             <KeyboardAvoidingView
@@ -174,8 +173,8 @@ export default function CreateScreen() {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={{ fontSize: 15, color: Colors.textSecondary, fontFamily: "Outfit-Regular", lineHeight: 22, marginBottom: 24 }}>
-                        Set up a new subject to organize your notes, flashcards, and group study.
+                    <Text style={{ fontSize: 18, color: Colors.primary, fontFamily: "Outfit-SemiBold", lineHeight: 22, marginBottom: 24 }}>
+                        Enter Subject details
                     </Text>
 
                     {/* Subject Name Input */}

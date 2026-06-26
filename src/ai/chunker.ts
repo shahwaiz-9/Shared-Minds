@@ -1,6 +1,6 @@
+import { DocumentMetadata, ProcessingOptions } from '@/interface/document';
 import { Document } from '@langchain/core/documents';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-import { DocumentMetadata, ProcessingOptions } from './types';
 import { AI_CONFIG } from './config';
 
 /**
